@@ -1,0 +1,859 @@
+:root {
+  --bg: #faf7f5;
+  --card: #ffffff;
+  --ink: #2b2b2b;
+  --muted: #7a7a7a;
+  --line: #e7e1dc;
+  --brand: #b5645f;
+  --brand-ink: #ffffff;
+  --ok: #2e7d52;
+  --warn: #b23b3b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.5;
+}
+
+/* mobile-first: tudo numa coluna confortável */
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1rem 1rem 4rem;
+}
+
+.centro {
+  min-height: 90vh;
+  display: grid;
+  place-items: center;
+}
+
+.cartao {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0 0 0.25rem;
+}
+.sub {
+  color: var(--muted);
+  margin: 0 0 1rem;
+}
+
+.coluna {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.linha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+input,
+select,
+button {
+  font: inherit;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+}
+input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+}
+
+button {
+  background: var(--brand);
+  color: var(--brand-ink);
+  border-color: var(--brand);
+  cursor: pointer;
+  font-weight: 600;
+}
+button.leve {
+  background: #fff;
+  color: var(--ink);
+  border-color: var(--line);
+  font-weight: 500;
+}
+
+.ok {
+  color: var(--ok);
+}
+.erro {
+  color: var(--warn);
+}
+
+/* ---------- toast de confirmação ---------- */
+/* No TOPO: fica visível mesmo com a página rolada lá embaixo no meio da árvore. */
+.toast {
+  position: fixed;
+  left: 50%;
+  top: 0.9rem;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: min(92vw, 30rem);
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22);
+  animation:
+    toast-entra 0.22s ease-out,
+    toast-sai 0.6s ease-in 6s forwards;
+}
+.toast-ok {
+  background: var(--ok);
+}
+.toast-erro {
+  background: var(--warn);
+  /* erro fica na tela: some só quando o usuário fecha */
+  animation: toast-entra 0.22s ease-out;
+}
+.toast-fechar {
+  color: #fff;
+  text-decoration: none;
+  font-size: 1.2rem;
+  line-height: 1;
+  opacity: 0.8;
+  margin-left: auto;
+}
+.toast-fechar:hover {
+  opacity: 1;
+}
+
+@keyframes toast-entra {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+@keyframes toast-sai {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
+
+/* aviso de regra de negócio violada — nunca derrubar a tela */
+.aviso-erro {
+  background: #fdecec;
+  color: var(--warn);
+  border: 1px solid #f3c9c9;
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  margin: 0 0 1rem;
+  font-size: 0.92rem;
+}
+
+.topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+}
+.painel {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.painel b {
+  color: var(--ink);
+  font-size: 1.05rem;
+}
+
+/* ---------- painel financeiro (RF09 / C1) ---------- */
+.dinheiro {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+}
+.dinheiro.estourou {
+  border-color: #f0c2c2;
+  background: #fffaf9;
+}
+
+.numeros {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem 1rem;
+}
+@media (min-width: 620px) {
+  .numeros {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+.numeros > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.numeros .rotulo {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+.numeros b {
+  font-size: 1.02rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.numeros .positivo b {
+  color: var(--ok);
+}
+.numeros .negativo b {
+  color: var(--warn);
+}
+
+.barra {
+  height: 6px;
+  background: #efe9e5;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 0.75rem;
+}
+.barra-cheia {
+  height: 100%;
+  background: var(--brand);
+  border-radius: 999px;
+}
+.dinheiro.estourou .barra-cheia {
+  background: var(--warn);
+}
+
+.dinheiro .alerta,
+.dinheiro .atencao {
+  margin: 0.7rem 0 0;
+  font-size: 0.88rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+}
+.dinheiro .alerta {
+  background: #fdecec;
+  color: var(--warn);
+}
+.dinheiro .atencao {
+  background: #fdf6e8;
+  color: #8a6320;
+}
+
+/* ---------- barra de filtros (RF13) ---------- */
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.6rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.7rem 0.85rem;
+  margin-bottom: 1rem;
+}
+.filtros label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  color: var(--muted);
+}
+.filtros label.linha {
+  flex-direction: row;
+  align-items: center;
+  color: var(--ink);
+}
+.filtros .contagem {
+  margin-left: auto;
+  color: var(--muted);
+  align-self: center;
+}
+
+/* ---------- tema colapsável ---------- */
+details.tema {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  margin-bottom: 0.6rem;
+  overflow: hidden;
+}
+.tema-resumo {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.6rem;
+  padding: 0.75rem 0.9rem;
+}
+.tema-resumo::-webkit-details-marker {
+  display: none;
+}
+.tema-resumo::before {
+  content: "▸";
+  color: var(--muted);
+  font-size: 0.8rem;
+  transition: transform 0.15s;
+}
+details.tema[open] > .tema-resumo::before {
+  transform: rotate(90deg);
+}
+.tema-resumo:hover {
+  background: #faf7f5;
+}
+.tema-nome {
+  font-weight: 600;
+  font-size: 1.02rem;
+}
+.tema-meta {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.tema-corpo {
+  padding: 0 0.9rem 0.9rem;
+  border-top: 1px solid var(--line);
+}
+.linha-acoes {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+.form-novo-tema {
+  margin-bottom: 1rem;
+}
+.pendente-essencial {
+  color: var(--warn);
+}
+
+/* cabeçalho de tema/subtema: título à esquerda, 🗑️ à direita */
+.cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+button.excluir {
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 0.2rem 0.35rem;
+  font-size: 0.95rem;
+  line-height: 1;
+  filter: grayscale(1);
+  opacity: 0.45;
+  cursor: pointer;
+}
+button.excluir:hover,
+button.excluir:focus-visible {
+  filter: none;
+  opacity: 1;
+  border-color: var(--warn);
+  background: #fdecec;
+}
+
+.vazio {
+  background: var(--card);
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-align: center;
+}
+.vazio p {
+  margin: 0 0 0.5rem;
+}
+
+.caixa-modelo {
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: #f7f3f0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  flex-wrap: nowrap;
+}
+.caixa-modelo input {
+  margin-top: 0.25rem;
+}
+.subtema {
+  border-left: 3px solid var(--line);
+  padding-left: 0.75rem;
+  margin: 0.75rem 0;
+}
+.subtema h4 {
+  margin: 0;
+  color: var(--muted);
+}
+
+.item {
+  padding: 0.5rem 0;
+  border-top: 1px dashed var(--line);
+  scroll-margin-top: 4.5rem; /* âncora não fica escondida atrás do toast */
+}
+/* pisca o item que acabou de ser salvo, pra achar de volta na hora */
+.item:target {
+  animation: item-salvo 2.4s ease-out;
+}
+@keyframes item-salvo {
+  0%,
+  35% {
+    background: #eaf5ee;
+    box-shadow: inset 3px 0 0 var(--ok);
+  }
+  100% {
+    background: transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .item:target {
+    animation: none;
+    box-shadow: inset 3px 0 0 var(--ok);
+  }
+}
+
+.numeros b.indefinido {
+  color: var(--muted);
+  font-weight: 500;
+}
+.item-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.item-resumo {
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+.observacao {
+  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ---------- editores (renomear / editar) ---------- */
+details.renomear {
+  min-width: 0;
+}
+details.renomear > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+details.renomear > summary::-webkit-details-marker {
+  display: none;
+}
+details.renomear > summary::after {
+  content: "✏️";
+  font-size: 0.75rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+details.renomear > summary:hover::after,
+details.renomear[open] > summary::after {
+  opacity: 0.55;
+}
+details.renomear > form {
+  margin-top: 0.5rem;
+}
+
+details.editor {
+  margin-top: 0.4rem;
+}
+details.editor > summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--muted);
+  list-style: none;
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+}
+details.editor > summary::-webkit-details-marker {
+  display: none;
+}
+details.editor > summary:hover {
+  color: var(--brand);
+  border-color: var(--brand);
+}
+details.editor[open] > summary {
+  margin-bottom: 0.6rem;
+}
+
+/* formulário em grade: 1 coluna no celular, 2 no desktop */
+.grade {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+  background: #faf7f5;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+@media (min-width: 620px) {
+  .grade {
+    grid-template-columns: 1fr 1fr;
+  }
+  .grade .largo,
+  .grade .acoes-form {
+    grid-column: 1 / -1;
+  }
+}
+.grade label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  min-width: 0;
+}
+.grade label.caixa {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  color: var(--ink);
+}
+.grade label.caixa input {
+  width: auto;
+}
+.grade input {
+  width: 100%;
+  font-size: 0.9rem;
+}
+.acoes-form {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+/* ---------- campos certos por item (curadoria) ---------- */
+/* Dinheiro só aparece quando "tem custo" está marcado. Reage AO VIVO ao
+   checkbox do próprio formulário — sem JavaScript. Se o navegador não tiver
+   :has(), os campos apenas continuam visíveis (nada quebra). */
+.grade:has(input[name="temCusto"]:not(:checked)) .so-com-custo {
+  display: none;
+}
+
+details.fornecedor,
+details.mais-campos {
+  border: 1px dashed var(--line);
+  border-radius: 9px;
+  padding: 0.5rem 0.65rem;
+  background: #fff;
+}
+details.fornecedor > summary,
+details.mais-campos > summary {
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--muted);
+  list-style: none;
+}
+details.fornecedor > summary::-webkit-details-marker,
+details.mais-campos > summary::-webkit-details-marker {
+  display: none;
+}
+details.fornecedor > summary::before,
+details.mais-campos > summary::before {
+  content: "▸ ";
+}
+details.fornecedor[open] > summary::before,
+details.mais-campos[open] > summary::before {
+  content: "▾ ";
+}
+details.fornecedor > summary:hover,
+details.mais-campos > summary:hover {
+  color: var(--brand);
+}
+.grade-fornecedor {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+@media (min-width: 620px) {
+  .grade-fornecedor {
+    grid-template-columns: 1fr 1fr;
+  }
+  .grade-fornecedor .largo {
+    grid-column: 1 / -1;
+  }
+}
+.grade-fornecedor label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.item .titulo {
+  font-weight: 600;
+}
+.badge {
+  font-size: 0.72rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: #f0eae6;
+  color: var(--muted);
+}
+.badge.resolvido {
+  background: #e3f2e9;
+  color: var(--ok);
+}
+.badge.essencial {
+  background: #fdecec;
+  color: var(--warn);
+}
+.badge.atrasado {
+  background: #fdecec;
+  color: var(--warn);
+  font-weight: 600;
+}
+.badge.a-vencer {
+  background: #fdf6e8;
+  color: #8a6320;
+  font-weight: 600;
+}
+
+/* ---------- painel de prazos (RF10 / C3) ---------- */
+.prazos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 0.88rem;
+  border: 1px solid transparent;
+}
+.chip.atrasado {
+  background: #fdecec;
+  color: var(--warn);
+  border-color: #f3c9c9;
+}
+.chip.a-vencer {
+  background: #fdf6e8;
+  color: #8a6320;
+  border-color: #eedcbc;
+}
+.chip:hover {
+  filter: brightness(0.97);
+}
+
+/* faixa lateral no item conforme o prazo */
+.item.prazo-atrasado {
+  box-shadow: inset 3px 0 0 var(--warn);
+  padding-left: 0.6rem;
+}
+.item.prazo-a_vencer {
+  box-shadow: inset 3px 0 0 #d9a441;
+  padding-left: 0.6rem;
+}
+.meta-atraso {
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.mini {
+  font-size: 0.85rem;
+}
+.mini input,
+.mini select,
+.mini button {
+  padding: 0.35rem 0.5rem;
+}
+
+/* ---------- página Como usar ---------- */
+.ajuda h2 {
+  font-size: 1.15rem;
+  margin: 0 0 0.5rem;
+}
+.ajuda h3 {
+  font-size: 0.98rem;
+  margin: 0.9rem 0 0.3rem;
+}
+.ajuda section {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.ajuda section.destaque {
+  border-color: #e6cdc9;
+  background: #fffaf9;
+}
+.ajuda p {
+  margin: 0.4rem 0;
+}
+.ajuda ul,
+.ajuda ol {
+  margin: 0.4rem 0;
+  padding-left: 1.2rem;
+}
+.ajuda li {
+  margin: 0.3rem 0;
+}
+.ajuda code {
+  background: #f0eae6;
+  padding: 0.1rem 0.35rem;
+  border-radius: 5px;
+  font-size: 0.9em;
+}
+
+.arvore-exemplo {
+  background: #f7f3f0;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 0.75rem;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  margin: 0.5rem 0;
+}
+
+.duas-colunas {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+  margin: 0.6rem 0;
+}
+@media (min-width: 620px) {
+  .duas-colunas {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.coluna-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.75rem;
+  background: #fff;
+}
+.coluna-card h3 {
+  margin-top: 0;
+}
+
+.fluxo {
+  background: #f0eae6;
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.nota {
+  background: #f7f3f0;
+  border-left: 3px solid var(--brand);
+  padding: 0.55rem 0.75rem;
+  border-radius: 0 8px 8px 0;
+  font-size: 0.9rem;
+}
+
+.tabela-rolagem {
+  overflow-x: auto;
+}
+.ajuda table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.88rem;
+  min-width: 460px;
+}
+.ajuda th,
+.ajuda td {
+  text-align: left;
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.ajuda th {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.passos li {
+  margin: 0.45rem 0;
+}
+.faq h3 {
+  color: var(--brand);
+}
+.voltar {
+  text-align: center;
+  margin: 1.5rem 0;
+}
+
+.botao-link {
+  display: inline-block;
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 0.4rem 0.7rem;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.botao-link:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.rodape {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.8rem;
+  padding: 1.5rem 0;
+}

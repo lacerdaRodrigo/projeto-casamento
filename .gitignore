@@ -1,0 +1,18 @@
+node_modules
+.next
+out
+build
+
+# segredos — NUNCA comitar (§9.1)
+.env
+.env.local
+.env*.local
+
+# supabase local
+.branches
+.temp
+
+# testes / build
+coverage
+*.tsbuildinfo
+next-env.d.ts
