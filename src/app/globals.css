@@ -405,6 +405,19 @@ button.leve:hover {
   }
 }
 
+/* bloco "reenviar confirmação" no login */
+.reenviar-confirmacao {
+  margin-top: 0.75rem;
+}
+.reenviar-confirmacao > summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.reenviar-confirmacao > summary:hover {
+  color: var(--accent);
+}
+
 .aviso-erro {
   background: var(--danger-bg);
   color: var(--danger-fg);

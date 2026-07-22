@@ -4,9 +4,12 @@ Dívidas assumidas de propósito pra destravar o desenvolvimento. Cada uma tem o
 
 ## 🔐 Auth
 
-### 1. Reativar confirmação de e-mail
-- **Agora:** desligada (ou a confirmar na mão) pra conseguir logar em dev — o free-tier limita a poucos e-mails/hora e travou o cadastro.
-- **No final:** religar **Authentication → Providers → Email → Confirm email**. Sem isso qualquer um cria conta com e-mail alheio.
+### 1. Reativar confirmação de e-mail  — 🚧 código pronto (branch `feat/confirmar-email`)
+- **Código (feito):** `signUp` manda `emailRedirectTo=/auth/callback`; login trata "e-mail não confirmado"; callback trata link expirado; tela de login mostra aviso + **reenviar confirmação**.
+- **Falta (painel Supabase — parte manual):**
+  1. **Authentication → Providers → Email → Confirm email = ON**.
+  2. **Authentication → URL Configuration:** Site URL + Redirect URLs incluindo `http://localhost:3000/auth/callback` (e a URL de produção quando houver).
+  3. *(Recomendado)* **SMTP próprio** (item 3) — o SMTP padrão do Supabase limita ~3-4 e-mails/h.
 - **Risco se esquecer:** 🔴 alto — cadastro sem verificação de identidade.
 
 ### 2. Voltar o login por magic link (RF01)

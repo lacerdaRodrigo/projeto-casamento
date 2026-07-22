@@ -41,11 +41,22 @@ export async function entrarComSenha(formData: FormData) {
     email: email.data,
     password: senha.data,
   });
-  if (error) redirect(`/login?erro=${encodeURIComponent(error.message)}`);
+  if (error) {
+    // e-mail ainda não confirmado tem tratamento próprio (com opção de reenviar)
+    const naoConfirmado = error.code === "email_not_confirmed";
+    const msg = naoConfirmado
+      ? "Confirme seu e-mail antes de entrar — veja a caixa de entrada (e o spam)."
+      : "E-mail ou senha incorretos.";
+    redirect(`/login?erro=${encodeURIComponent(msg)}${naoConfirmado ? "&confirmar=1" : ""}`);
+  }
   redirect("/");
 }
 
-/** Criar conta por e-mail + senha. Sem confirmação de e-mail = loga na hora. */
+/**
+ * Criar conta por e-mail + senha. Com "Confirm email" LIGADO no Supabase, não
+ * vem sessão — o usuário precisa clicar no link do e-mail (que volta pro
+ * /auth/callback graças ao emailRedirectTo). Sem confirmação, loga na hora.
+ */
 export async function cadastrarComSenha(formData: FormData) {
   const email = emailSchema.safeParse(formData.get("email"));
   const senha = senhaSchema.safeParse(formData.get("senha"));
@@ -57,11 +68,28 @@ export async function cadastrarComSenha(formData: FormData) {
   const { data, error } = await sb.auth.signUp({
     email: email.data,
     password: senha.data,
+    options: { emailRedirectTo: `${await origin()}/auth/callback` },
   });
   if (error) redirect(`/login?erro=${encodeURIComponent(error.message)}`);
 
-  // Com "Confirm email" desligado, já vem sessão -> vai pra home.
-  // Com confirmação ligada, não vem sessão -> avisa pra confirmar e-mail.
+  // Confirmação desligada -> já vem sessão -> home. Ligada -> sem sessão -> avisa.
   if (data.session) redirect("/");
   redirect("/login?confirme=1");
+}
+
+/** Reenvia o e-mail de confirmação (link expirou / não chegou). */
+export async function reenviarConfirmacao(formData: FormData) {
+  const email = emailSchema.safeParse(formData.get("email"));
+  if (!email.success) {
+    redirect(`/login?erro=${encodeURIComponent("Informe um e-mail válido para reenviar.")}`);
+  }
+
+  const sb = await createSupabaseServerClient();
+  const { error } = await sb.auth.resend({
+    type: "signup",
+    email: email.data,
+    options: { emailRedirectTo: `${await origin()}/auth/callback` },
+  });
+  if (error) redirect(`/login?erro=${encodeURIComponent(error.message)}`);
+  redirect("/login?reenviado=1");
 }
