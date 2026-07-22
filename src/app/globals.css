@@ -405,6 +405,40 @@ button.leve:hover {
   }
 }
 
+/* botão "Entrar com Google" */
+.btn-google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  background: #fff;
+  color: #1f1f1f;
+  border: 1px solid var(--line);
+  font-weight: 600;
+}
+.btn-google:hover {
+  filter: none;
+  border-color: var(--accent);
+  background: #fff;
+}
+
+/* divisor "ou com e-mail" */
+.divisor {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--muted-2);
+  font-size: 0.8rem;
+  margin: 0.9rem 0;
+}
+.divisor::before,
+.divisor::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
 /* bloco "reenviar confirmação" no login */
 .reenviar-confirmacao {
   margin-top: 0.75rem;
