@@ -17,23 +17,6 @@ async function origin(): Promise<string> {
   return `${proto}://${host}`;
 }
 
-/**
- * Login com Google (OAuth). Não precisa de SMTP nem confirmação de e-mail — o
- * Google já garante a identidade. No servidor, signInWithOAuth devolve a URL do
- * consentimento do Google; a gente redireciona pra lá. Depois o Google volta pro
- * /auth/callback com o code, que vira sessão.
- */
-export async function entrarComGoogle() {
-  const sb = await createSupabaseServerClient();
-  const { data, error } = await sb.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: `${await origin()}/auth/callback` },
-  });
-  if (error) redirect(`/login?erro=${encodeURIComponent(error.message)}`);
-  if (data.url) redirect(data.url);
-  redirect("/login?erro=Não%20consegui%20iniciar%20o%20login%20com%20Google");
-}
-
 /** Magic link por e-mail (RF01). Limitado no free-tier (~poucos/hora). */
 export async function enviarMagicLink(formData: FormData) {
   const email = parseEmail(formData.get("email"));

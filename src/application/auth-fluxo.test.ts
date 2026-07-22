@@ -85,6 +85,12 @@ describe("auth-fluxo", () => {
     it("rate limit", () => {
       expect(mensagemErroCadastro("over_email_send_rate_limit", "")).toContain("Muitas tentativas");
     });
+    it("cadastro fechado (signups off) → mensagem própria", () => {
+      expect(mensagemErroCadastro("signup_disabled", "")).toContain("Cadastro fechado");
+      expect(mensagemErroCadastro(undefined, "Signups not allowed for this instance")).toContain(
+        "Cadastro fechado",
+      );
+    });
     it("desconhecido → mensagem genérica em PT", () => {
       const msg = mensagemErroCadastro("algo_novo", "Something weird");
       expect(msg).toContain("Não deu pra criar a conta");

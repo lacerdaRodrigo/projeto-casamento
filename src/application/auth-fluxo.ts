@@ -61,8 +61,11 @@ export function mensagemErroCadastro(codigo: string | undefined, bruta: string):
   if (c === "over_email_send_rate_limit" || c.includes("rate") || m.includes("rate limit") || m.includes("too many")) {
     return "Muitas tentativas em pouco tempo. Espere um minuto e tente de novo.";
   }
-  if (c === "email_address_invalid" || m.includes("invalid") ) {
+  if (c === "email_address_invalid" || m.includes("invalid")) {
     return "E-mail inválido.";
+  }
+  if (c === "signup_disabled" || m.includes("signups not allowed") || m.includes("signup is disabled")) {
+    return "Cadastro fechado. Use uma conta já criada (ou peça pro dono liberar).";
   }
   return "Não deu pra criar a conta agora. Tente de novo em instantes.";
 }
