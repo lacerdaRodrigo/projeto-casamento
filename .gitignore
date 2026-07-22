@@ -16,3 +16,10 @@ build
 coverage
 *.tsbuildinfo
 next-env.d.ts
+
+# arquivos de trabalho / handoff de design (não versionar)
+/image*.png
+/Captura de tela*
+/Recrear design*
+/*.zip
+/txt
