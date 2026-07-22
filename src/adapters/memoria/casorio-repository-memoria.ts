@@ -44,6 +44,11 @@ export class CasorioRepositoryMemoria implements CasorioRepository {
       }));
   }
 
+  async getMinhaArvore(): Promise<TemaComFilhos[]> {
+    const casorio = this.casorios[0];
+    return casorio ? this.getArvore(casorio.id) : [];
+  }
+
   async criarTema(input: NovoTema): Promise<Tema> {
     const tema: Tema = {
       id: crypto.randomUUID(),

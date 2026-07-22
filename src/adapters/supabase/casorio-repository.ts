@@ -107,13 +107,7 @@ export class SupabaseCasorioRepository implements CasorioRepository {
     return data && data.length > 0 ? mapCasorio(data[0]) : null;
   }
 
-  async getArvore(casorioId: string): Promise<TemaComFilhos[]> {
-    const { data, error } = await this.sb
-      .from("tema")
-      .select("*, subtema(*, item(*))")
-      .eq("casorio_id", casorioId);
-    if (error) throw new Error(`getArvore: ${error.message}`);
-
+  private montarArvore(data: Row[] | null): TemaComFilhos[] {
     const temas = (data ?? []).map((t: Row): TemaComFilhos => {
       const subtemas = (((t.subtema as Row[]) ?? []).map((s): SubtemaComItens => {
         const itens = (((s.item as Row[]) ?? []).map(mapItem)).sort(byOrdem);
@@ -122,6 +116,23 @@ export class SupabaseCasorioRepository implements CasorioRepository {
       return { ...mapTema(t), subtemas };
     });
     return temas.sort(byOrdem);
+  }
+
+  async getArvore(casorioId: string): Promise<TemaComFilhos[]> {
+    const { data, error } = await this.sb
+      .from("tema")
+      .select("*, subtema(*, item(*))")
+      .eq("casorio_id", casorioId);
+    if (error) throw new Error(`getArvore: ${error.message}`);
+    return this.montarArvore(data);
+  }
+
+  async getMinhaArvore(): Promise<TemaComFilhos[]> {
+    // Sem filtro por casorio_id: o RLS já limita às linhas do casal (V1 = um
+    // casório). Assim roda em paralelo com meuCasorio().
+    const { data, error } = await this.sb.from("tema").select("*, subtema(*, item(*))");
+    if (error) throw new Error(`getMinhaArvore: ${error.message}`);
+    return this.montarArvore(data);
   }
 
   async criarTema(input: NovoTema): Promise<Tema> {

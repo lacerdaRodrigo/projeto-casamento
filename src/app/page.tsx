@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/adapters/supabase/client";
 import { SupabaseAuthService } from "@/adapters/supabase/auth-service";
 import { SupabaseCasorioRepository } from "@/adapters/supabase/casorio-repository";
-import { formatarBRL } from "@/domain/money";
+import { formatarBRL, type Centavos } from "@/domain/money";
 import { calcularPainelFinanceiro, type PainelFinanceiro } from "@/domain/financeiro";
 import { isResolvido, type StatusItem } from "@/domain/status";
 import {
@@ -14,7 +14,7 @@ import {
   type PainelPrazos,
   type SituacaoPrazo,
 } from "@/domain/prazo";
-import { progressoDe } from "@/domain/progresso";
+import { progressoDe, type Progresso } from "@/domain/progresso";
 import { camposDoItemNaArvore } from "@/domain/campos-item";
 import {
   contarItens,
@@ -28,21 +28,24 @@ import type { Casorio, Item, SubtemaComItens, TemaComFilhos } from "@/domain/ent
 import { CampoDinheiro } from "@/components/campo-dinheiro";
 import { BotaoExcluir } from "@/components/botao-excluir";
 import { Toast } from "@/components/toast";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { PainelAbas } from "@/components/painel-abas";
+import { AcoesTema } from "@/components/acoes-tema";
+import { AcoesItem } from "@/components/acoes-item";
+import { Compositor } from "@/components/compositor";
+import { SubmitButton } from "@/components/submit-button";
 import { TAMANHO_TEMPLATE } from "@/application/semear-template";
 import {
   carregarModeloAction,
   criarCasorioAction,
   criarItemAction,
-  criarSubtemaAction,
-  criarTemaAction,
+  criarSubtemaCompletoAction,
+  criarTemaCompletoAction,
   editarCasorioAction,
   editarItemAction,
-  excluirItemAction,
   excluirSubtemaAction,
-  excluirTemaAction,
   mudarStatusAction,
   renomearSubtemaAction,
-  renomearTemaAction,
   sairAction,
 } from "./actions";
 
@@ -60,6 +63,41 @@ function contar(n: number, singular: string, plural: string): string {
 function formatarData(iso: string): string {
   const [ano, mes, dia] = iso.split("-");
   return `${dia}/${mes}/${ano}`;
+}
+
+const MESES = [
+  "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+  "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+];
+
+/** yyyy-mm-dd -> "14 de novembro de 2026". Sem Date (fuso). */
+function dataPorExtenso(iso: string): string {
+  const [ano, mes, dia] = iso.split("-");
+  return `${Number(dia)} de ${MESES[Number(mes) - 1]} de ${ano}`;
+}
+
+/** Valor compacto pros resumos ("R$ 8,5 mil"). Cheio nos totais principais. */
+function brlCompacto(c: Centavos): string {
+  const reais = c / 100;
+  if (reais >= 1000) {
+    return `R$ ${(reais / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil`;
+  }
+  return `R$ ${reais.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
+}
+
+/** "Rodrigo & Jennifer" -> "R&J" pro avatar. */
+function iniciais(nome: string): string {
+  const partes = nome
+    .split(/\s*&\s*|\s+e\s+/i)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (partes.length >= 2) {
+    return partes
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase() ?? "")
+      .join("&");
+  }
+  return nome.trim().slice(0, 2).toUpperCase() || "💍";
 }
 
 const LABEL_STATUS: Record<StatusItem, string> = {
@@ -94,20 +132,21 @@ export default async function Home({
     ok?: string;
     situacao?: string;
     essencial?: string;
-    tema?: string;
     prazo?: string;
+    aba?: string;
   }>;
 }) {
   const sp = await searchParams;
   const sb = await createSupabaseServerClient();
-  const user = await new SupabaseAuthService(sb).usuarioAtual();
+  // portão de UI: sessão local (sem rede) — o middleware já validou/refrescou.
+  // Os dados seguem protegidos por RLS.
+  const user = await new SupabaseAuthService(sb).usuarioDaSessao();
   if (!user) redirect("/login");
 
   const repo = new SupabaseCasorioRepository(sb);
-  const casorio = await repo.meuCasorio();
+  // casório e árvore em paralelo — o RLS escopa a árvore ao casal (V1 = 1 casório).
+  const [casorio, arvore] = await Promise.all([repo.meuCasorio(), repo.getMinhaArvore()]);
   if (!casorio) return <Onboarding />;
-
-  const arvore = await repo.getArvore(casorio.id);
   // o "hoje" é resolvido AQUI (borda) e injetado no núcleo (D08)
   const hoje = hojeSaoPaulo();
   const dias = casorio.dataCasamento ? diasEntre(hoje, casorio.dataCasamento) : null;
@@ -118,55 +157,55 @@ export default async function Home({
   const geral = progressoDe(todosItens);
   const prazos = calcularPainelPrazos(todosItens, hoje); // C3
 
-  // RF13 — filtros vindos da URL
+  // RF13 — filtros vindos da URL. O tema agora é escolhido pelas ABAS, não por
+  // dropdown — então temaId fica sempre null aqui.
   const filtros: Filtros = {
     situacao: (["todos", "pendentes", "resolvidos"] as const).includes(sp.situacao as Situacao)
       ? (sp.situacao as Situacao)
       : "todos",
     somenteEssenciais: sp.essencial === "1",
-    temaId: sp.tema || null,
+    temaId: null,
     prazo: (["todos", "atrasados", "a_vencer"] as const).includes(sp.prazo as FiltroPrazo)
       ? (sp.prazo as FiltroPrazo)
       : "todos",
   };
-  const arvoreVisivel = filtrarArvore(arvore, filtros, hoje);
   const ativo = filtroAtivo(filtros);
   const totalItens = contarItens(arvore);
-  const visiveis = contarItens(arvoreVisivel);
 
-  // URL atual SEM a mensagem — vai junto de cada ação pra o filtro sobreviver
+  // aba escolhida: 'overview' ou um id de tema. Filtro ativo esconde as abas
+  // (a lista achata todos os temas que batem).
+  const abaValida = sp.aba && arvore.some((t) => t.id === sp.aba) ? sp.aba : "overview";
+
+  // Caminho de FILTRO (server): achata todos os temas que batem.
+  const arvoreFiltrada = ativo ? filtrarArvore(arvore, filtros, hoje) : [];
+  const visiveisFiltro = contarItens(arvoreFiltrada);
+
+  // URL atual SEM a mensagem — vai junto de cada ação pra filtro/aba sobreviverem
   const query = new URLSearchParams();
   if (filtros.situacao !== "todos") query.set("situacao", filtros.situacao);
   if (filtros.somenteEssenciais) query.set("essencial", "1");
-  if (filtros.temaId) query.set("tema", filtros.temaId);
   if (filtros.prazo !== "todos") query.set("prazo", filtros.prazo);
+  if (!ativo && abaValida !== "overview") query.set("aba", abaValida);
   const voltarPara = query.size > 0 ? `/?${query}` : "/";
 
   return (
     <main>
-      <div className="topo">
-        <div>
-          <h1>💍 {casorio.nome}</h1>
-          <div className="painel">
-            {dias !== null && (
-              <span>
-                <b>{dias}</b> dias pro casório
-              </span>
-            )}
-            <span>
-              <b>
-                {geral.resolvidos}/{geral.total}
-              </b>{" "}
-              resolvidos ({geral.percentual}%)
-            </span>
-            {geral.essenciaisPendentes > 0 && (
-              <span className="pendente-essencial">
-                ⭐ <b>{geral.essenciaisPendentes}</b> essenciais pendentes
-              </span>
-            )}
+      <header className="app-header">
+        <div className="app-header-info">
+          <div className="avatar" aria-hidden="true">
+            {iniciais(casorio.nome)}
+          </div>
+          <div>
+            <h1>{casorio.nome}</h1>
+            <p className="sub">Contagem regressiva pro grande dia</p>
           </div>
         </div>
-        <div className="linha">
+        <div className="app-header-acoes">
+          <ThemeToggle />
+          <EditarCasorio casorio={casorio} voltarPara={voltarPara} />
+          <Link href="/montar" className="botao-link">
+            🛠 Montar árvore
+          </Link>
           <Link href="/ajuda" className="botao-link">
             📖 Como usar
           </Link>
@@ -176,40 +215,99 @@ export default async function Home({
             </button>
           </form>
         </div>
-      </div>
+      </header>
 
       {sp.ok && <Toast mensagem={sp.ok} tipo="ok" voltarPara={voltarPara} />}
       {sp.erro && <Toast mensagem={sp.erro} tipo="erro" voltarPara={voltarPara} />}
 
-      <PainelDinheiro painel={financeiro} />
+      <Hero
+        dias={dias}
+        dataCasamento={casorio.dataCasamento}
+        progresso={geral}
+      />
+
+      <PainelDinheiro painel={financeiro} totalItens={totalItens} />
       <PainelPrazosView prazos={prazos} />
-      <EditarCasorio casorio={casorio} voltarPara={voltarPara} />
 
       {arvore.length > 0 && (
-        <BarraFiltros
-          temas={arvore.map((t) => ({ id: t.id, nome: t.nome }))}
-          filtros={filtros}
-          ativo={ativo}
-          visiveis={visiveis}
-          total={totalItens}
+        <BarraFiltros filtros={filtros} ativo={ativo} visiveis={visiveisFiltro} total={totalItens} />
+      )}
+
+      {/* SEM filtro: abas + visão geral + todos os temas, com troca instantânea
+          no cliente (sem refetch). O servidor renderiza tudo uma vez só. */}
+      {arvore.length > 0 && !ativo && (
+        <PainelAbas
+          initialAba={abaValida}
+          abas={arvore.map((t) => ({
+            id: t.id,
+            nome: t.nome,
+            atrasados: calcularPainelPrazos(
+              t.subtemas.flatMap((s) => s.itens),
+              hoje,
+            ).atrasados,
+          }))}
+          cards={arvore.map((t) => {
+            const itens = t.subtemas.flatMap((s) => s.itens);
+            const prog = progressoDe(itens);
+            const fin = calcularPainelFinanceiro(itens, 0);
+            const prazosTema = calcularPainelPrazos(itens, hoje);
+            return {
+              id: t.id,
+              nome: t.nome,
+              percentual: prog.percentual,
+              resolvidos: prog.resolvidos,
+              total: prog.total,
+              estimado: fin.estimadoTotal > 0 ? brlCompacto(fin.estimadoTotal) : null,
+              essenciaisPendentes: prog.essenciaisPendentes,
+              atrasados: prazosTema.atrasados,
+            };
+          })}
+          temas={arvore.map((t) => ({
+            id: t.id,
+            nome: t.nome,
+            visiveis: contarItens([t]),
+            node: (
+              <Tema
+                tema={t}
+                casorioId={casorio.id}
+                voltarPara={`/?aba=${t.id}`}
+                hoje={hoje}
+                aberto={true}
+              />
+            ),
+          }))}
         />
       )}
 
       <FormTema casorioId={casorio.id} voltarPara={voltarPara} />
 
       {arvore.length === 0 && <ArvoreVazia casorioId={casorio.id} voltarPara={voltarPara} />}
-      {arvore.length > 0 && arvoreVisivel.length === 0 && <SemResultado />}
 
-      {arvoreVisivel.map((tema) => (
-        <Tema
-          key={tema.id}
-          tema={tema}
-          casorioId={casorio.id}
-          voltarPara={voltarPara}
-          hoje={hoje}
-          aberto={ativo || arvoreVisivel.length === 1}
-        />
-      ))}
+      {/* COM filtro: lista achatada renderizada no servidor. */}
+      {ativo && (
+        <>
+          <div className="lista-titulo">
+            <h2>Resultados do filtro</h2>
+            <span className="contagem">
+              {visiveisFiltro} {visiveisFiltro === 1 ? "item" : "itens"}
+            </span>
+          </div>
+          {arvoreFiltrada.length === 0 ? (
+            <SemResultado />
+          ) : (
+            arvoreFiltrada.map((tema) => (
+              <Tema
+                key={tema.id}
+                tema={tema}
+                casorioId={casorio.id}
+                voltarPara={voltarPara}
+                hoje={hoje}
+                aberto={true}
+              />
+            ))
+          )}
+        </>
+      )}
     </main>
   );
 }
@@ -218,7 +316,10 @@ function Onboarding() {
   return (
     <main className="centro">
       <div className="cartao">
-        <h1>💍 Bem-vindos!</h1>
+        <div className="avatar lg" aria-hidden="true">
+          R&amp;J
+        </div>
+        <h1>Bem-vindos 🤍</h1>
         <p className="sub">Vamos criar o seu casório. Você vira o Dono.</p>
         <form action={criarCasorioAction} className="coluna">
           <input name="nome" placeholder="Nome (ex.: Rodrigo & Jennifer)" required />
@@ -253,40 +354,141 @@ function Onboarding() {
   );
 }
 
+/** Cabeçalho + contagem regressiva + anel de progresso. */
+function Hero({
+  dias,
+  dataCasamento,
+  progresso,
+}: {
+  dias: number | null;
+  dataCasamento: string | null;
+  progresso: Progresso;
+}) {
+  return (
+    <section className="hero">
+      <div className="card card-countdown">
+        <span className="kicker">faltam</span>
+        {dias !== null && dataCasamento ? (
+          <>
+            <div className="countdown-num">
+              <b>{Math.max(0, dias)}</b>
+              <span>dias</span>
+            </div>
+            <span className="data-longa">📅 {dataPorExtenso(dataCasamento)}</span>
+          </>
+        ) : (
+          <>
+            <div className="countdown-num">
+              <b>—</b>
+            </div>
+            <span className="data-longa">Defina a data em ⚙️ Ajustar casório</span>
+          </>
+        )}
+      </div>
+
+      <div className="card card-progresso">
+        <div
+          className="ring"
+          style={{
+            background: `conic-gradient(var(--accent-fill) ${progresso.percentual}%, var(--track) 0)`,
+          }}
+          aria-hidden="true"
+        >
+          <span className="ring-centro">{progresso.percentual}%</span>
+        </div>
+        <div>
+          <span className="kicker">progresso</span>
+          <p className="prog-texto">
+            {progresso.resolvidos} <span>/ {progresso.total} resolvidos</span>
+          </p>
+          {progresso.essenciaisPendentes > 0 && (
+            <span className="pendente-essencial">
+              ⭐ {progresso.essenciaisPendentes} essenciais pendentes
+            </span>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /** RF09 — painel de orçamento. Os números vêm do C1 (domínio puro). */
-function PainelDinheiro({ painel }: { painel: PainelFinanceiro }) {
+function PainelDinheiro({ painel, totalItens }: { painel: PainelFinanceiro; totalItens: number }) {
   const { orcamento, orcamentoDefinido, estimadoTotal, comprometido, pago, saldo, estourou, semPreco } =
     painel;
-  const usado = orcamentoDefinido ? Math.min(100, (estimadoTotal / orcamento) * 100) : 0;
+
+  // barra empilhada Pago | Comprometido | Estimado, com marca do teto.
+  const base = Math.max(orcamento, estimadoTotal) || 1;
+  const pct = (v: number) => `${(v / base) * 100}%`;
+  const mostrarBarra = estimadoTotal > 0 || orcamentoDefinido;
+  const saldoNeg = orcamentoDefinido && saldo < 0;
 
   return (
-    <section className={`dinheiro ${estourou ? "estourou" : ""}`}>
+    <section className={`dinheiro card ${estourou ? "estourou" : ""}`}>
+      <div className="dinheiro-topo">
+        <h2>Orçamento</h2>
+        <span className="contagem">
+          {totalItens} {totalItens === 1 ? "item no total" : "itens no total"}
+        </span>
+      </div>
+
       <div className="numeros">
         <div>
-          <span className="rotulo">Orçamento</span>
+          <span className="kicker">Teto</span>
           {orcamentoDefinido ? <b>{formatarBRL(orcamento)}</b> : <b className="indefinido">—</b>}
         </div>
         <div>
-          <span className="rotulo">Planejado</span>
+          <span className="kicker">Planejado</span>
           <b>{formatarBRL(estimadoTotal)}</b>
         </div>
         <div>
-          <span className="rotulo">Comprometido</span>
+          <span className="kicker">Comprometido</span>
           <b>{formatarBRL(comprometido)}</b>
         </div>
-        <div>
-          <span className="rotulo">Pago</span>
+        <div className="destaque">
+          <span className="kicker">Pago</span>
           <b>{formatarBRL(pago)}</b>
         </div>
-        <div className={orcamentoDefinido && saldo < 0 ? "negativo" : "positivo"}>
-          <span className="rotulo">Saldo</span>
+        <div className={saldoNeg ? "negativo" : "positivo"}>
+          <span className="kicker">Saldo</span>
           {orcamentoDefinido ? <b>{formatarBRL(saldo)}</b> : <b className="indefinido">—</b>}
         </div>
       </div>
 
-      {orcamentoDefinido && (
-        <div className="barra" aria-hidden="true">
-          <div className="barra-cheia" style={{ width: `${usado}%` }} />
+      {mostrarBarra && (
+        <div>
+          <div className="barra-emp" aria-hidden="true">
+            <span className="seg-pago" style={{ width: pct(pago) }} />
+            <span
+              className="seg-comp"
+              style={{ left: pct(pago), width: pct(comprometido - pago) }}
+            />
+            <span
+              className="seg-est"
+              style={{ left: pct(comprometido), width: pct(estimadoTotal - comprometido) }}
+            />
+          </div>
+          {orcamentoDefinido && (
+            <div className="marca-teto-linha" aria-hidden="true">
+              <span className="marca-teto" style={{ left: pct(orcamento) }}>
+                ▲ teto
+              </span>
+            </div>
+          )}
+          <div className="legenda">
+            <span>
+              <i style={{ background: "var(--accent-strong)" }} />
+              Pago
+            </span>
+            <span>
+              <i style={{ background: "var(--accent-fill)" }} />
+              Comprometido
+            </span>
+            <span>
+              <i style={{ background: "var(--dot-neutral)" }} />
+              Estimado
+            </span>
+          </div>
         </div>
       )}
 
@@ -343,46 +545,45 @@ function PainelPrazosView({ prazos }: { prazos: PainelPrazos }) {
 /** UC09 — ajustar nome, data e orçamento depois de criado (RF09). */
 function EditarCasorio({ casorio, voltarPara }: { casorio: Casorio; voltarPara: string }) {
   return (
-    <details className="editor">
-      <summary>⚙️ Ajustar casório (nome, data, orçamento)</summary>
-      <form action={editarCasorioAction} className="grade">
-        <Voltar para={voltarPara} />
-        <input type="hidden" name="casorioId" value={casorio.id} />
-        <label>
-          Nome
-          <input name="nome" defaultValue={casorio.nome} required />
-        </label>
-        <label>
-          Data do casamento
-          <input type="date" name="dataCasamento" defaultValue={casorio.dataCasamento ?? ""} />
-        </label>
-        <label>
-          Orçamento total (R$)
-          <CampoDinheiro
-            name="orcamentoCentavos"
-            defaultCentavos={casorio.orcamentoTotal}
-            aria-label="Orçamento total"
-          />
-        </label>
-        <div className="acoes-form">
-          <button type="submit">Salvar</button>
-        </div>
-      </form>
+    <details className="editor ajustar">
+      <summary>⚙️ Ajustar casório</summary>
+      <div className="ajustar-painel">
+        <form action={editarCasorioAction} className="grade">
+          <Voltar para={voltarPara} />
+          <input type="hidden" name="casorioId" value={casorio.id} />
+          <label>
+            Nome
+            <input name="nome" defaultValue={casorio.nome} required />
+          </label>
+          <label>
+            Data do casamento
+            <input type="date" name="dataCasamento" defaultValue={casorio.dataCasamento ?? ""} />
+          </label>
+          <label>
+            Orçamento total (R$)
+            <CampoDinheiro
+              name="orcamentoCentavos"
+              defaultCentavos={casorio.orcamentoTotal}
+              aria-label="Orçamento total"
+            />
+          </label>
+          <div className="acoes-form">
+            <SubmitButton mensagemSucesso="Casório atualizado">Salvar</SubmitButton>
+          </div>
+        </form>
+      </div>
     </details>
   );
 }
 
-/** RF13 — filtros. Form GET puro: sem JavaScript, e a URL guarda o estado. */
+/** RF13 — filtros. Form GET puro: sem JavaScript, e a URL guarda o estado.
+    O tema saiu do dropdown — agora é escolhido pelas abas. */
 function BarraFiltros({
-  temas,
   filtros,
   ativo,
   visiveis,
   total,
 }: {
-  /** Só id e nome — passar a árvore inteira duplicaria todos os itens no
-      payload enviado ao navegador. */
-  temas: { id: string; nome: string }[];
   filtros: Filtros;
   ativo: boolean;
   visiveis: number;
@@ -396,18 +597,6 @@ function BarraFiltros({
           <option value="todos">Tudo</option>
           <option value="pendentes">Só o que falta</option>
           <option value="resolvidos">Só o que já resolvi</option>
-        </select>
-      </label>
-
-      <label className="mini">
-        Tema
-        <select name="tema" defaultValue={filtros.temaId ?? ""}>
-          <option value="">Todos</option>
-          {temas.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.nome}
-            </option>
-          ))}
         </select>
       </label>
 
@@ -433,11 +622,18 @@ function BarraFiltros({
       )}
 
       <span className="contagem mini">
-        exibindo <b>{visiveis}</b> de {total} itens
+        {ativo ? (
+          <>
+            exibindo <b>{visiveis}</b> de {total} itens
+          </>
+        ) : (
+          <>filtre por situação, prazo ou essenciais</>
+        )}
       </span>
     </form>
   );
 }
+
 
 function SemResultado() {
   return (
@@ -453,27 +649,39 @@ function SemResultado() {
 function ArvoreVazia({ casorioId, voltarPara }: { casorioId: string; voltarPara: string }) {
   return (
     <div className="vazio">
-      <p className="sub">Sem temas ainda. Crie o primeiro acima ☝️</p>
-      <p className="sub mini">…ou comece do modelo pronto e apague o que não servir:</p>
-      <form action={carregarModeloAction}>
-        <Voltar para={voltarPara} />
-        <input type="hidden" name="casorioId" value={casorioId} />
-        <button type="submit">
-          ✨ Carregar modelo pronto ({TAMANHO_TEMPLATE.itens} itens)
-        </button>
-      </form>
+      <div className="vazio-icone" aria-hidden="true">
+        🌱
+      </div>
+      <h2>Comece a plantar seu casório</h2>
+      <p className="sub">
+        Sem temas ainda. Crie o primeiro acima ☝️ ou carregue o modelo pronto e apague o que não
+        servir.
+      </p>
+      <div className="vazio-acoes">
+        <form action={carregarModeloAction}>
+          <Voltar para={voltarPara} />
+          <input type="hidden" name="casorioId" value={casorioId} />
+          <button type="submit">✨ Carregar modelo ({TAMANHO_TEMPLATE.itens} itens)</button>
+        </form>
+      </div>
     </div>
   );
 }
 
 function FormTema({ casorioId, voltarPara }: { casorioId: string; voltarPara: string }) {
   return (
-    <form action={criarTemaAction} className="linha mini form-novo-tema">
-      <Voltar para={voltarPara} />
-      <input type="hidden" name="casorioId" value={casorioId} />
-      <input name="nome" placeholder="Novo tema (ex.: Comida)" required />
-      <button type="submit">+ Tema</button>
-    </form>
+    <div className="form-novo-tema">
+      <Compositor
+        action={criarTemaCompletoAction}
+        ocultos={[
+          { name: "voltarPara", value: voltarPara },
+          { name: "casorioId", value: casorioId },
+        ]}
+        campoNome="nome"
+        placeholder="Novo tema (ex.: Comida)"
+        rotuloAbrir="+ Novo tema"
+      />
+    </div>
   );
 }
 
@@ -504,48 +712,30 @@ function Tema({
     <details className="tema" open={aberto}>
       <summary className="tema-resumo">
         <span className="tema-nome">{tema.nome}</span>
+        <AcoesTema
+          temaId={tema.id}
+          temaNome={tema.nome}
+          voltarPara={voltarPara}
+          avisoExcluir={`Apagar o tema "${tema.nome}"${filhos}?\n\nIsso não tem volta.`}
+        />
         <span className="tema-meta">
-          {contar(tema.subtemas.length, "subtema", "subtemas")} ·{" "}
-          {progresso.resolvidos}/{progresso.total} resolvidos
-          {dinheiro.estimadoTotal > 0 && <> · {formatarBRL(dinheiro.estimadoTotal)}</>}
+          <span className="tema-mini-barra" aria-hidden="true">
+            <span style={{ width: `${progresso.percentual}%` }} />
+          </span>
+          {progresso.resolvidos}/{progresso.total}
+          {dinheiro.estimadoTotal > 0 && <> · {brlCompacto(dinheiro.estimadoTotal)}</>}
           {progresso.essenciaisPendentes > 0 && (
-            <> · ⭐ {progresso.essenciaisPendentes} pendentes</>
+            <span className="pendente-essencial"> · ⭐{progresso.essenciaisPendentes}</span>
           )}
           {prazos.atrasados > 0 && (
-            <span className="meta-atraso"> · ⏰ {prazos.atrasados} atrasado(s)</span>
+            <span className="oc-marcas">
+              <span className="atr">· ⏰{prazos.atrasados}</span>
+            </span>
           )}
         </span>
       </summary>
 
       <div className="tema-corpo">
-        <div className="linha-acoes">
-          <details className="renomear">
-            <summary>✏️ Renomear tema</summary>
-            <form action={renomearTemaAction} className="linha mini">
-              <Voltar para={voltarPara} />
-              <input type="hidden" name="temaId" value={tema.id} />
-              <input name="nome" defaultValue={tema.nome} required aria-label="Novo nome do tema" />
-              <button type="submit">Renomear</button>
-            </form>
-          </details>
-          <form action={excluirTemaAction}>
-            <Voltar para={voltarPara} />
-            <input type="hidden" name="temaId" value={tema.id} />
-            <BotaoExcluir
-              titulo={`Excluir tema ${tema.nome}`}
-              aviso={`Apagar o tema "${tema.nome}"${filhos}?\n\nIsso não tem volta.`}
-            />
-          </form>
-        </div>
-
-        <form action={criarSubtemaAction} className="linha mini">
-          <Voltar para={voltarPara} />
-          <input type="hidden" name="casorioId" value={casorioId} />
-          <input type="hidden" name="temaId" value={tema.id} />
-          <input name="nome" placeholder="Novo subtema (ex.: Bebidas)" required />
-          <button type="submit">+ Subtema</button>
-        </form>
-
         {tema.subtemas.map((sub) => (
           <Subtema
             key={sub.id}
@@ -556,6 +746,18 @@ function Tema({
             temaNome={tema.nome}
           />
         ))}
+
+        <Compositor
+          action={criarSubtemaCompletoAction}
+          ocultos={[
+            { name: "voltarPara", value: voltarPara },
+            { name: "casorioId", value: casorioId },
+            { name: "temaId", value: tema.id },
+          ]}
+          campoNome="nome"
+          placeholder="Novo subtema (ex.: Bebidas)"
+          rotuloAbrir="+ Subtema"
+        />
       </div>
     </details>
   );
@@ -590,7 +792,7 @@ function Subtema({
               required
               aria-label="Novo nome do subtema"
             />
-            <button type="submit">Renomear</button>
+            <SubmitButton mensagemSucesso="Subtema renomeado">Renomear</SubmitButton>
           </form>
         </details>
         <form action={excluirSubtemaAction}>
@@ -618,20 +820,17 @@ function Subtema({
         />
       ))}
 
-      <form action={criarItemAction} className="linha mini">
-        <Voltar para={voltarPara} />
-        <input type="hidden" name="casorioId" value={casorioId} />
-        <input type="hidden" name="subtemaId" value={subtema.id} />
-        <input name="titulo" placeholder="Novo item (ex.: Refrigerante)" required />
-        <label className="linha">
-          <input type="checkbox" name="temCusto" /> tem custo
-        </label>
-        <CampoDinheiro name="custoEstimadoCentavos" placeholder="estimado R$" aria-label="Custo estimado" />
-        <label className="linha">
-          <input type="checkbox" name="essencial" /> essencial
-        </label>
-        <button type="submit">+ Item</button>
-      </form>
+      <Compositor
+        action={criarItemAction}
+        ocultos={[
+          { name: "voltarPara", value: voltarPara },
+          { name: "casorioId", value: casorioId },
+          { name: "subtemaId", value: subtema.id },
+        ]}
+        campoNome="titulo"
+        placeholder="Novo item (ex.: Refrigerante)"
+        rotuloAbrir="+ Item"
+      />
     </div>
   );
 }
@@ -653,46 +852,67 @@ function ItemLinha({
   // salvar volta pra esta âncora — assim você não perde o lugar na árvore
   const voltarProItem = `${voltarPara}#item-${item.id}`;
   const prazo = classificarPrazo(item, hoje);
-  return (
-    <div className={`item prazo-${prazo}`} id={`item-${item.id}`}>
-      <div className="item-topo">
-        <ResumoItem item={item} resolvido={resolvido} prazo={prazo} hoje={hoje} />
-        <FormStatus item={item} voltarPara={voltarProItem} />
-      </div>
-      <EditorItem
-        item={item}
-        voltarPara={voltarProItem}
-        temaNome={temaNome}
-        subtemaNome={subtemaNome}
-      />
-    </div>
-  );
-}
+  const descartado = item.status === "descartado";
+  const urgente = prazo === "atrasado" || prazo === "a_vencer";
+  const dotClass = descartado
+    ? ""
+    : resolvido
+      ? "resolvido"
+      : prazo === "atrasado"
+        ? "atrasado"
+        : prazo === "a_vencer"
+          ? "a_vencer"
+          : "";
+  const temLinha2 = (item.dataAlvo && !urgente) || item.fornecedorNome;
 
-function ResumoItem({
-  item,
-  resolvido,
-  prazo,
-  hoje,
-}: {
-  item: Item;
-  resolvido: boolean;
-  prazo: SituacaoPrazo;
-  hoje: string;
-}) {
   return (
-    <div className="item-resumo">
-      <span className="titulo">{item.titulo}</span>{" "}
-      <span className={`badge ${resolvido ? "resolvido" : ""}`}>{LABEL_STATUS[item.status]}</span>{" "}
-      {item.essencial && <span className="badge essencial">essencial</span>}{" "}
-      {item.temCusto && (
-        <span className="mini">
-          · {formatarBRL(item.custoReal > 0 ? item.custoReal : item.custoEstimado)}
-        </span>
-      )}
-      {item.dataAlvo && <EtiquetaPrazo dataAlvo={item.dataAlvo} prazo={prazo} hoje={hoje} />}
-      {item.fornecedorNome && <span className="mini"> · 🏪 {item.fornecedorNome}</span>}
-      {item.observacao && <p className="observacao">{item.observacao}</p>}
+    <div className={`item ${descartado ? "descartado" : ""}`} id={`item-${item.id}`}>
+      <span className={`item-dot ${dotClass}`} aria-hidden="true" />
+      <div className="item-corpo">
+        <div className="item-linha1">
+          {item.essencial && (
+            <span className="estrela" title="essencial">
+              ★
+            </span>
+          )}
+          <span className="titulo">{item.titulo}</span>
+          <span className={`badge ${resolvido ? "resolvido" : ""}`}>
+            {LABEL_STATUS[item.status]}
+          </span>
+          {urgente && item.dataAlvo && (
+            <EtiquetaPrazo dataAlvo={item.dataAlvo} prazo={prazo} hoje={hoje} />
+          )}
+        </div>
+
+        {temLinha2 && (
+          <div className="item-linha2">
+            {item.dataAlvo && !urgente && <span>📅 {formatarData(item.dataAlvo)}</span>}
+            {item.fornecedorNome && <span>🏪 {item.fornecedorNome}</span>}
+          </div>
+        )}
+
+        {item.observacao && <p className="observacao">{item.observacao}</p>}
+      </div>
+
+      <AcoesItem
+        itemId={item.id}
+        titulo={item.titulo}
+        temCusto={item.temCusto}
+        custoEstimado={item.custoEstimado}
+        custoReal={item.custoReal}
+        voltarPara={voltarProItem}
+        editor={
+          <>
+            <FormStatus item={item} voltarPara={voltarProItem} />
+            <EditorItem
+              item={item}
+              voltarPara={voltarProItem}
+              temaNome={temaNome}
+              subtemaNome={subtemaNome}
+            />
+          </>
+        }
+      />
     </div>
   );
 }
@@ -783,10 +1003,8 @@ function EditorItem({
   const campos = camposDoItemNaArvore({ temaNome, subtemaNome, temCusto: item.temCusto });
 
   return (
-    <details className="editor">
-      <summary>✏️ Editar</summary>
-      <form action={editarItemAction} className="grade">
-        <Voltar para={voltarPara} />
+    <form action={editarItemAction} className="grade">
+      <Voltar para={voltarPara} />
         <input type="hidden" name="itemId" value={item.id} />
         <input type="hidden" name="statusAtual" value={item.status} />
         <input type="hidden" name="temCustoAtual" value={String(item.temCusto)} />
@@ -849,18 +1067,19 @@ function EditorItem({
           </details>
         )}
 
-        <div className="acoes-form">
-          <button type="submit">Salvar item</button>
-        </div>
-      </form>
-    </details>
+      <div className="acoes-form">
+        <SubmitButton mensagemSucesso="Item salvo">Salvar item</SubmitButton>
+      </div>
+    </form>
   );
 }
 
 function FormStatus({ item, voltarPara }: { item: Item; voltarPara: string }) {
   return (
     <>
-      <form action={mudarStatusAction} className="linha mini">
+      {/* form-status: o CSS mostra o valor só quando o status escolhido EXIGE
+          custo real (contratado/pago) — reage ao <select>, sem JS. */}
+      <form action={mudarStatusAction} className="linha mini form-status">
         <Voltar para={voltarPara} />
         <input type="hidden" name="itemId" value={item.id} />
         <input type="hidden" name="temCusto" value={String(item.temCusto)} />
@@ -872,25 +1091,18 @@ function FormStatus({ item, voltarPara }: { item: Item; voltarPara: string }) {
           ))}
         </select>
         {item.temCusto && (
-          <CampoDinheiro
-            name="custoRealCentavos"
-            placeholder="real R$"
-            defaultCentavos={item.custoReal}
-            aria-label="Custo real"
-          />
+          <span className="so-quando-preciso">
+            <CampoDinheiro
+              name="custoRealCentavos"
+              placeholder="valor real R$"
+              defaultCentavos={item.custoReal}
+              aria-label="Custo real"
+            />
+          </span>
         )}
-        <button className="leve" type="submit">
+        <SubmitButton className="leve" mensagemSucesso="Status atualizado">
           Salvar
-        </button>
-      </form>
-
-      <form action={excluirItemAction}>
-        <Voltar para={voltarPara} />
-        <input type="hidden" name="itemId" value={item.id} />
-        <BotaoExcluir
-          titulo={`Excluir item ${item.titulo}`}
-          aviso={`Apagar o item "${item.titulo}"?\n\nIsso não tem volta.`}
-        />
+        </SubmitButton>
       </form>
     </>
   );

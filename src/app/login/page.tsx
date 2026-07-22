@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { cadastrarComSenha, entrarComSenha } from "./actions";
 
 export default async function LoginPage({
@@ -11,8 +12,14 @@ export default async function LoginPage({
   return (
     <main className="centro">
       <div className="cartao">
-        <h1>💍 Nosso Casório</h1>
-        <p className="sub">Entre para organizar o casamento.</p>
+        <div className="app-header-acoes" style={{ justifyContent: "flex-end", marginBottom: "0.5rem" }}>
+          <ThemeToggle />
+        </div>
+        <div className="avatar lg" aria-hidden="true">
+          R&amp;J
+        </div>
+        <h1>Nosso Casório</h1>
+        <p className="sub">Entre para organizar o casamento, a dois.</p>
 
         {/* Magic link desativado por ora (rate limit do free-tier).
             Volta antes de produção — ver docs/pendencias.md */}

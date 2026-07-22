@@ -93,6 +93,47 @@ export function parseSubtema(fd: FormData) {
   });
 }
 
+// --- compositores da tela "Montar" (form sempre completo) --------------------
+// Tema/subtema podem nascer já com "tem custo"/"essencial" — que no domínio só
+// existem em ITEM. O caso de uso (montar-arvore) semeia o primeiro item.
+export const compositorTemaSchema = z.object({
+  casorioId: z.string().uuid(),
+  nome: textoObrigatorio("Nome do tema"),
+  temCusto: z.boolean(),
+  custoEstimado: centavosSchema,
+  essencial: z.boolean(),
+});
+
+export function parseCompositorTema(fd: FormData) {
+  return compositorTemaSchema.parse({
+    casorioId: fd.get("casorioId"),
+    nome: fd.get("nome"),
+    temCusto: checkbox(fd, "temCusto"),
+    custoEstimado: centavos(fd, "custoEstimadoCentavos"),
+    essencial: checkbox(fd, "essencial"),
+  });
+}
+
+export const compositorSubtemaSchema = z.object({
+  temaId: z.string().uuid(),
+  casorioId: z.string().uuid(),
+  nome: textoObrigatorio("Nome do subtema"),
+  temCusto: z.boolean(),
+  custoEstimado: centavosSchema,
+  essencial: z.boolean(),
+});
+
+export function parseCompositorSubtema(fd: FormData) {
+  return compositorSubtemaSchema.parse({
+    temaId: fd.get("temaId"),
+    casorioId: fd.get("casorioId"),
+    nome: fd.get("nome"),
+    temCusto: checkbox(fd, "temCusto"),
+    custoEstimado: centavos(fd, "custoEstimadoCentavos"),
+    essencial: checkbox(fd, "essencial"),
+  });
+}
+
 // --- item --------------------------------------------------------------------
 export const itemSchema = z.object({
   subtemaId: z.string().uuid(),

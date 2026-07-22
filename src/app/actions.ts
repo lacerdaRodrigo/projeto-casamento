@@ -12,10 +12,13 @@ import { SupabaseCasorioRepository } from "@/adapters/supabase/casorio-repositor
 import { mudarStatusItem } from "@/application/mudar-status-item";
 import { semearTemplate } from "@/application/semear-template";
 import { editarItem } from "@/application/editar-item";
+import { criarTemaCompleto, criarSubtemaCompleto } from "@/application/montar-arvore";
 import { urlComMensagem } from "@/application/voltar-para";
 import {
   mensagemDeErro,
   parseCasorio,
+  parseCompositorSubtema,
+  parseCompositorTema,
   parseEditarItem,
   parseId,
   parseItem,
@@ -31,25 +34,42 @@ async function getRepo() {
   return new SupabaseCasorioRepository(sb);
 }
 
+/** Caminho (sem query/hash) de uma URL de retorno — pra revalidar a rota certa. */
+function caminhoDe(url: string): string {
+  try {
+    return new URL(url, "http://x").pathname || "/";
+  } catch {
+    return "/";
+  }
+}
+
 /**
- * Executa o trabalho da action e devolve retorno visível pro usuário.
- * O redirect fica FORA do try — senão o próprio redirect (que lança) seria
- * capturado como erro.
+ * Executa o trabalho da action.
+ *
+ * SUCESSO: NÃO navega — só revalida a rota atual. A página se atualiza NO LUGAR
+ * (o item muda na tela na hora), sem trocar de tela nem piscar loading. O
+ * feedback de "Salvando…" fica no botão (useFormStatus).
+ *
+ * ERRO de regra: aí sim redireciona pra mesma URL com `?erro=`, pra mostrar o
+ * aviso vermelho — nunca uma tela de crash. (O redirect lança, então fica FORA
+ * do try.)
  */
 async function executar(
   formData: FormData,
-  sucesso: string,
+  _sucesso: string,
   trabalho: () => Promise<void>,
 ) {
-  const voltarPara = formData.get("voltarPara");
+  const bruto = formData.get("voltarPara");
+  const voltarPara = typeof bruto === "string" && bruto ? bruto : "/";
   let erro: string | null = null;
   try {
     await trabalho();
   } catch (e) {
     erro = mensagemDeErro(e);
   }
-  revalidatePath("/");
-  redirect(urlComMensagem(voltarPara, erro ? "erro" : "ok", erro ?? sucesso));
+  revalidatePath(caminhoDe(voltarPara));
+  if (erro) redirect(urlComMensagem(voltarPara, "erro", erro));
+  // sucesso: sem redirect — atualização no lugar
 }
 
 export async function criarCasorioAction(formData: FormData) {
@@ -84,6 +104,24 @@ export async function criarSubtemaAction(formData: FormData) {
     const data = parseSubtema(formData);
     const repo = await getRepo();
     await repo.criarSubtema(data);
+  });
+}
+
+/** Compositor da tela Montar: cria tema já com custo/essencial (semeia 1 item). */
+export async function criarTemaCompletoAction(formData: FormData) {
+  await executar(formData, "Tema criado", async () => {
+    const data = parseCompositorTema(formData);
+    const repo = await getRepo();
+    await criarTemaCompleto(repo, data);
+  });
+}
+
+/** Compositor da tela Montar: cria subtema já com custo/essencial (semeia 1 item). */
+export async function criarSubtemaCompletoAction(formData: FormData) {
+  await executar(formData, "Subtema criado", async () => {
+    const data = parseCompositorSubtema(formData);
+    const repo = await getRepo();
+    await criarSubtemaCompleto(repo, data);
   });
 }
 

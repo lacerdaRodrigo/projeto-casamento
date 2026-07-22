@@ -5,12 +5,15 @@ export const metadata = { title: "Como usar · Nosso Casório" };
 export default function AjudaPage() {
   return (
     <main className="ajuda">
-      <div className="topo">
-        <h1>📖 Como usar</h1>
+      <p style={{ margin: "0 0 1.25rem" }}>
         <Link href="/" className="botao-link">
-          Voltar
+          ← Voltar ao painel
         </Link>
-      </div>
+      </p>
+      <h1 style={{ marginBottom: "0.25rem" }}>Como usar</h1>
+      <p className="sub" style={{ marginBottom: "1.5rem" }}>
+        Tudo o que o casal precisa saber pra organizar o casório sem se perder.
+      </p>
 
       {/* ------------------------------------------------------------------ */}
       <section>

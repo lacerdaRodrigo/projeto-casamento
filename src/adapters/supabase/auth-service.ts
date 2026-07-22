@@ -10,4 +10,13 @@ export class SupabaseAuthService implements AuthService {
     if (error || !data.user) return null;
     return { id: data.user.id, email: data.user.email ?? null };
   }
+
+  async usuarioDaSessao(): Promise<UsuarioAutenticado | null> {
+    // getSession lê do cookie (sem rede) — o middleware já refrescou a sessão a
+    // cada request. Evita um segundo getUser remoto por navegação.
+    const { data } = await this.sb.auth.getSession();
+    const user = data.session?.user;
+    if (!user) return null;
+    return { id: user.id, email: user.email ?? null };
+  }
 }

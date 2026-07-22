@@ -109,12 +109,12 @@ O que a gente **não** faz agora (evita super-construir):
 | **RF05** | **Subtemas:** idem, dentro de um tema | Centralizar |
 | **RF06** | **Itens:** título, *tem custo?*, custo estimado, custo real, data-alvo, observação, **essencial**, **responsável**, **fornecedor** (nome/telefone/link) | Centralizar / dinheiro / prazo |
 | **RF07** | **Status** (com custo: *a decidir→decidido→contratado→pago*; sem custo: *a fazer→feito*) + **descartar / reativar** item — ref. D02, D13 | Acompanhar status |
-| **RF08** | **Navegar a árvore** Tema→Subtema→Item, com progresso em cada nível | Centralizar |
+| **RF08** | **Navegar a árvore** Tema→Subtema→Item, com progresso em cada nível — via **abas de tema + visão geral** (reduz rolagem; ver D16) | Centralizar |
 | **RF09** | **Painel de orçamento:** orçado, comprometido, pago, **saldo** + alerta se estourar | Dinheiro |
 | **RF10** | **Painel de prazos:** itens atrasados e a vencer em destaque | Prazo |
 | **RF11** | **Progresso:** % de itens resolvidos (geral e por tema); destaca **essenciais pendentes** | Métrica de sucesso |
 | **RF12** | **Template inicial:** casório nasce com temas/subtemas sugeridos, editáveis | Adoção |
-| **RF13** | **Filtros:** por status, por tema, **por responsável**, "só atrasados", "só pendentes", **"só essenciais"** | Usabilidade |
+| **RF13** | **Filtros:** por status, "só atrasados"/"a vencer", **"só essenciais"** (o tema saiu do dropdown — agora é escolhido pelas **abas**, D16). *Filtro por responsável fica pra quando houver membros (M3).* | Usabilidade |
 | **RF14** | **Registro de atividade:** trilha cronológica de quem fez o quê e quando, filtrável | Planejar junto / confiança |
 | **RF15** | **Contagem regressiva:** a tela inicial mostra quantos dias faltam pro casamento | Motivação |
 
@@ -471,10 +471,10 @@ sequenceDiagram
 ## 11. Roadmap
 
 ### 🎯 V1 — o casal usando de verdade *(meta: abandonar a planilha)*
-- **M1 — Esqueleto fim-a-fim** *(fatia vertical mais fina):* Auth + criar casório + 1 tema→subtema→item salvando no Supabase **com RLS**. Prova a arquitetura, mata o risco técnico.
-- **M2 — Núcleo do produto** *(usável sozinho):* árvore completa (CRUD), item com status + custo (estimado/real) + data-alvo + observação + **essencial** + **responsável** + **fornecedor**, **painel financeiro** + **prazos** + **progresso** + **contagem regressiva**. Larga a planilha.
-- **M3 — Colaboração:** papéis Dono/Editor/Leitor, convite por e-mail, **auditoria visível** (tela de atividade).
-- **M4 — Acabamento:** template inicial, filtros, polish mobile, quality gate completo (Sonar).
+- **M1 — Esqueleto fim-a-fim** ✅ *(fatia vertical mais fina):* Auth + criar casório + 1 tema→subtema→item salvando no Supabase **com RLS**. Prova a arquitetura, mata o risco técnico.
+- **M2 — Núcleo do produto** ✅ *(usável sozinho):* árvore completa (CRUD), item com status + custo (estimado/real) + data-alvo + observação + **essencial** + **fornecedor**, **painel financeiro** + **prazos** + **progresso** + **contagem regressiva**. Larga a planilha. *(Falta ainda **responsável** — depende de M3 pra ter membros.)*
+- **M3 — Colaboração:** ⬜ papéis Dono/Editor/Leitor, convite por e-mail, **auditoria visível** (tela de atividade). *(A trilha de auditoria já é gravada por trigger; falta a tela.)*
+- **M4 — Acabamento:** 🟡 template inicial ✅, filtros ✅, **redesign** (tema escuro Nocturne + toggle claro, abas de tema + visão geral, tela "Montar", feedback in-place — ver D16) ✅; falta quality gate completo (Sonar) + E2E.
 
 ### 🔜 V2 — depois do V1 no ar
 Lembretes automáticos (porta `NotificationService`) · **exportar CSV/JSON** (porta `Exporter`) · busca por texto · **acesso por-tema** (evolui D04) · tempo-real (Supabase Realtime).
@@ -514,7 +514,8 @@ Docs de apoio (cada um com seu público) — o **PRD continua sendo a fonte da v
 - **D13 — Estado "descartado"** *(→ Seções 1/2/3/5/6):* qualquer item pode ser **descartado** ("não vai ter"), com motivo opcional; fica registrado e **reativável**, mas **fora de todas as contas** (orçamento, progresso, prazos). Alternativa ao apagar, que é definitivo.
 - **D14 — Melhorias do item (V1)** *(→ Seções 2/3/5/6):* item ganha **essencial** (destaca no progresso, RN24), **responsável** (um membro; habilita o filtro "meus itens"), **contato do fornecedor** (nome/telefone/link) e **contagem regressiva** pro casamento na tela inicial (RF15).
 - **D15 — Versionamento automático do app** *(→ Seção 9.4):* app segue **SemVer** `MAJOR.MINOR.PATCH`, **bumpado automaticamente** pelo CI a partir de **Conventional Commits** (`fix`=PATCH, `feat`=MINOR, `BREAKING CHANGE`=MAJOR) via `semantic-release` no GitHub Actions — cria tag, `CHANGELOG.md` e deploy. Versão exibida no rodapé (`NEXT_PUBLIC_APP_VERSION`). Distinta da versão deste PRD.
+- **D16 — Redesign do painel** *(→ Seções 2/7):* interface refeita a partir do handoff de design. **Tema escuro (Nocturne) como padrão + botão de alternar pro claro** (rosé), persistido em `localStorage` sem flash. Navegação da árvore por **abas de tema + visão geral** (troca instantânea no cliente, sem refetch) em vez da lista corrida — reduz rolagem. **Hero** (contagem regressiva + anel de progresso), **barra empilhada** de orçamento (pago/comprometido/estimado + marca do teto) e **comparação estimado × real** por item. Nova tela **"Montar a árvore"** (`/montar`): editor com compositores de adição **sempre completos** (nome + tem custo/valor + essencial), abertos a partir de um botão "+". **Feedback in-place:** salvar **não navega** — a página atualiza no lugar, com botão "Salvando…" e **toast client** de sucesso (verde) / erro. As regras de negócio (C1–C4) seguem intactas — o redesign é só apresentação/navegação.
 
 ---
 
-*PRD **v1.1** completo (12/12). Próximo passo do projeto: criar o repositório e iniciar o **M1** (fatia vertical).*
+*PRD **v1.2**. Estado: **M1 + M2 concluídos**; M4 em acabamento (redesign feito — D16); **M3 (colaboração) pendente**. Próximo foco sugerido: entrega (git + CI + deploy, ver `pendencias.md`) e M3.*
