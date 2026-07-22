@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/adapters/supabase/client";
 import {
   destinoCadastro,
   destinoErroLogin,
+  mensagemErroCadastro,
   parseCredenciais,
   parseEmail,
 } from "@/application/auth-fluxo";
@@ -61,7 +62,9 @@ export async function cadastrarComSenha(formData: FormData) {
     password: cred.senha,
     options: { emailRedirectTo: `${await origin()}/auth/callback` },
   });
-  if (error) redirect(`/login?erro=${encodeURIComponent(error.message)}`);
+  if (error) {
+    redirect(`/login?erro=${encodeURIComponent(mensagemErroCadastro(error.code, error.message))}`);
+  }
 
   redirect(destinoCadastro({ temSessao: Boolean(data.session) }));
 }

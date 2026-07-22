@@ -42,3 +42,27 @@ export function destinoErroLogin(codigoErro: string | undefined): string {
     : "E-mail ou senha incorretos.";
   return `/login?erro=${encodeURIComponent(msg)}${naoConfirmado ? "&confirmar=1" : ""}`;
 }
+
+/**
+ * Traduz o erro do signUp pra PT-BR claro. O Supabase devolve mensagens em
+ * inglês (ex.: "User already registered") — sem tradução, o usuário acha que
+ * "não funciona". Casa por `code` (novo) e por trecho da mensagem (fallback).
+ */
+export function mensagemErroCadastro(codigo: string | undefined, bruta: string): string {
+  const c = codigo ?? "";
+  const m = (bruta ?? "").toLowerCase();
+
+  if (c === "user_already_exists" || m.includes("already registered") || m.includes("already exists")) {
+    return "Esse e-mail já tem conta. Tente entrar (ou recupere a senha).";
+  }
+  if (c === "weak_password" || m.includes("password should") || m.includes("weak password")) {
+    return "Senha fraca — use ao menos 6 caracteres.";
+  }
+  if (c === "over_email_send_rate_limit" || c.includes("rate") || m.includes("rate limit") || m.includes("too many")) {
+    return "Muitas tentativas em pouco tempo. Espere um minuto e tente de novo.";
+  }
+  if (c === "email_address_invalid" || m.includes("invalid") ) {
+    return "E-mail inválido.";
+  }
+  return "Não deu pra criar a conta agora. Tente de novo em instantes.";
+}

@@ -4,6 +4,7 @@ import {
   parseEmail,
   destinoCadastro,
   destinoErroLogin,
+  mensagemErroCadastro,
 } from "./auth-fluxo";
 
 describe("auth-fluxo", () => {
@@ -68,6 +69,25 @@ describe("auth-fluxo", () => {
       const url = destinoErroLogin(undefined);
       expect(url).not.toContain("confirmar=1");
       expect(decodeURIComponent(url)).toContain("E-mail ou senha incorretos");
+    });
+  });
+
+  describe("mensagemErroCadastro (traduz erro do Supabase)", () => {
+    it("por CODE: user_already_exists → já tem conta", () => {
+      expect(mensagemErroCadastro("user_already_exists", "")).toContain("já tem conta");
+    });
+    it("por MENSAGEM: 'User already registered' → já tem conta", () => {
+      expect(mensagemErroCadastro(undefined, "User already registered")).toContain("já tem conta");
+    });
+    it("senha fraca", () => {
+      expect(mensagemErroCadastro("weak_password", "")).toContain("Senha fraca");
+    });
+    it("rate limit", () => {
+      expect(mensagemErroCadastro("over_email_send_rate_limit", "")).toContain("Muitas tentativas");
+    });
+    it("desconhecido → mensagem genérica em PT", () => {
+      const msg = mensagemErroCadastro("algo_novo", "Something weird");
+      expect(msg).toContain("Não deu pra criar a conta");
     });
   });
 });
