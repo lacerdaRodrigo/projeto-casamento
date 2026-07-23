@@ -16,6 +16,7 @@ import {
 } from "@/domain/prazo";
 import { progressoDe, type Progresso } from "@/domain/progresso";
 import { ehSoltos } from "@/domain/subtema-soltos";
+import { linkDoContato, normalizarLink, rotuloDoLink } from "@/domain/fornecedor";
 import { MOSTRAR_ADD_SUBTEMA } from "./ui-flags";
 import { camposDoItemNaArvore } from "@/domain/campos-item";
 import {
@@ -895,7 +896,12 @@ function ItemLinha({
         : prazo === "a_vencer"
           ? "a_vencer"
           : "";
-  const temLinha2 = (item.dataAlvo && !urgente) || item.fornecedorNome;
+  // dados do fornecedor: cada um aparece só quando foi preenchido
+  const contato = linkDoContato(item.fornecedorContato);
+  const link = normalizarLink(item.fornecedorLink);
+  const temLinha2 = Boolean(
+    (item.dataAlvo && !urgente) || item.fornecedorNome || item.fornecedorContato || link,
+  );
 
   return (
     <div className={`item ${descartado ? "descartado" : ""}`} id={`item-${item.id}`}>
@@ -918,12 +924,42 @@ function ItemLinha({
 
         {temLinha2 && (
           <div className="item-linha2">
-            {item.dataAlvo && !urgente && <span>📅 {formatarData(item.dataAlvo)}</span>}
-            {item.fornecedorNome && <span>🏪 {item.fornecedorNome}</span>}
+            {item.dataAlvo && !urgente && (
+              <span>
+                <b className="rotulo-campo">Data-alvo:</b> {formatarData(item.dataAlvo)}
+              </span>
+            )}
+            {item.fornecedorNome && (
+              <span>
+                <b className="rotulo-campo">Fornecedor:</b> {item.fornecedorNome}
+              </span>
+            )}
+            {item.fornecedorContato && (
+              <span>
+                <b className="rotulo-campo">Telefone:</b>{" "}
+                {contato ? (
+                  <a href={contato.href}>{item.fornecedorContato}</a>
+                ) : (
+                  item.fornecedorContato
+                )}
+              </span>
+            )}
+            {link && (
+              <span className="campo-link">
+                <b className="rotulo-campo">Link:</b>{" "}
+                <a href={link} target="_blank" rel="noopener noreferrer">
+                  {rotuloDoLink(item.fornecedorLink)}
+                </a>
+              </span>
+            )}
           </div>
         )}
 
-        {item.observacao && <p className="observacao">{item.observacao}</p>}
+        {item.observacao && (
+          <p className="observacao">
+            <b className="rotulo-campo">Observação:</b> {item.observacao}
+          </p>
+        )}
       </div>
 
       <AcoesItem

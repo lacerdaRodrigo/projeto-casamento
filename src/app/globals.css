@@ -1298,16 +1298,41 @@ button.excluir:focus-visible {
 .item-linha2 {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.15rem 0.9rem;
   margin-top: 2px;
   font-size: 0.78rem;
   color: var(--muted-2);
+}
+/* "Data-alvo:", "Fornecedor:", "Telefone:"… — sem rótulo a pessoa não sabe
+   o que o valor significa. */
+.rotulo-campo {
+  font-weight: 600;
+  color: var(--muted);
+}
+.item-linha2 a {
+  color: var(--accent-strong);
+}
+/* link longo não pode empurrar a linha: corta com "…" */
+.campo-link {
+  min-width: 0;
+  max-width: 100%;
+  display: inline-flex;
+  gap: 0.3rem;
+}
+.campo-link a {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .observacao {
   margin: 0.2rem 0 0;
   font-size: 0.82rem;
   color: var(--muted);
   font-style: italic;
+}
+/* o rótulo é etiqueta, não texto da anotação */
+.observacao .rotulo-campo {
+  font-style: normal;
 }
 
 /* Em celular a coluna do lado (valor + ✏️🗑️) espremia o nome do item, que
