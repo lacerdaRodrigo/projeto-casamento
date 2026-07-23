@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ToasterClient } from "@/components/toaster-client";
+import { version } from "../../package.json";
 
 export const metadata: Metadata = {
   title: "Nosso Casório 💍",
@@ -12,7 +13,9 @@ export const metadata: Metadata = {
 const SCRIPT_TEMA = `(function(){try{var t=localStorage.getItem('tema');document.documentElement.dataset.theme=t==='claro'?'claro':'escuro';}catch(e){document.documentElement.dataset.theme='escuro';}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const versao = process.env.NEXT_PUBLIC_APP_VERSION ?? "0.0.0";
+  // versão do package.json (o semantic-release bumpa/commita sozinho no CI);
+  // env var opcional pode sobrescrever.
+  const versao = process.env.NEXT_PUBLIC_APP_VERSION ?? version;
   return (
     <html lang="pt-BR" data-theme="escuro" suppressHydrationWarning>
       <head>

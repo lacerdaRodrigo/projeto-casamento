@@ -1,0 +1,37 @@
+name: Release
+
+# Versionamento automático (D15): a cada push na main, o semantic-release lê os
+# Conventional Commits (fix/feat/BREAKING) e bumpa a versão, gera CHANGELOG,
+# cria a tag + release no GitHub e commita o package.json novo. A Vercel
+# rebuilda a partir desse commit e o rodapé passa a mostrar a versão nova.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write # criar tag/commit/release
+  issues: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # não roda no próprio commit de release (evita voltas)
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: semantic-release
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

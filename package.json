@@ -1,6 +1,6 @@
 {
   "name": "nosso-casorio",
-  "version": "0.1.0",
+  "version": "1.0.20",
   "private": true,
   "type": "module",
   "scripts": {
@@ -25,9 +25,12 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
+    "@semantic-release/changelog": "^7.0.0",
+    "@semantic-release/git": "^11.0.0",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.4",
     "@types/react-dom": "^19.0.2",
+    "semantic-release": "^25.0.8",
     "typescript": "^5.7.3",
     "vitest": "^2.1.8"
   }
