@@ -45,11 +45,6 @@ export class CasorioRepositoryMemoria implements CasorioRepository {
       }));
   }
 
-  async getMinhaArvore(): Promise<TemaComFilhos[]> {
-    const casorio = this.casorios[0];
-    return casorio ? this.getArvore(casorio.id) : [];
-  }
-
   async meuCasorioComArvore(): Promise<{ casorio: Casorio; arvore: TemaComFilhos[] } | null> {
     const casorio = this.casorios[0];
     if (!casorio) return null;

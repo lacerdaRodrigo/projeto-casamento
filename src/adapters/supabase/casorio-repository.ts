@@ -128,14 +128,6 @@ export class SupabaseCasorioRepository implements CasorioRepository {
     return this.montarArvore(data);
   }
 
-  async getMinhaArvore(): Promise<TemaComFilhos[]> {
-    // Sem filtro por casorio_id: o RLS já limita às linhas do casal (V1 = um
-    // casório). Assim roda em paralelo com meuCasorio().
-    const { data, error } = await this.sb.from("tema").select("*, subtema(*, item(*))");
-    if (error) throw new Error(`getMinhaArvore: ${error.message}`);
-    return this.montarArvore(data);
-  }
-
   async meuCasorioComArvore(): Promise<{ casorio: Casorio; arvore: TemaComFilhos[] } | null> {
     // Casório + árvore inteira num embed aninhado só (1 round-trip). RLS escopa.
     const { data, error } = await this.sb

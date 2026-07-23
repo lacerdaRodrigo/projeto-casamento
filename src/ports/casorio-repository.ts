@@ -57,15 +57,9 @@ export interface CasorioRepository {
   /** Árvore completa Tema→Subtema→Item de um casório. */
   getArvore(casorioId: string): Promise<TemaComFilhos[]>;
   /**
-   * Árvore do casório do usuário logado, SEM precisar do id antes (o RLS já
-   * escopa às linhas do casal — V1 = um casório só). Permite carregar casório e
-   * árvore em paralelo, cortando um round-trip por navegação.
-   */
-  getMinhaArvore(): Promise<TemaComFilhos[]>;
-  /**
    * Casório do usuário + árvore inteira numa QUERY só (embed aninhado). Um
    * round-trip em vez de dois — cada save dispara um render, então isso pesa.
-   * null quando o usuário ainda não tem casório.
+   * null quando o usuário ainda não tem casório. (O RLS escopa ao casal.)
    */
   meuCasorioComArvore(): Promise<{ casorio: Casorio; arvore: TemaComFilhos[] } | null>;
   criarTema(input: NovoTema): Promise<Tema>;

@@ -17,20 +17,6 @@ async function origin(): Promise<string> {
   return `${proto}://${host}`;
 }
 
-/** Magic link por e-mail (RF01). Limitado no free-tier (~poucos/hora). */
-export async function enviarMagicLink(formData: FormData) {
-  const email = parseEmail(formData.get("email"));
-  if (!email) redirect(`/login?erro=${encodeURIComponent("E-mail inválido")}`);
-
-  const sb = await createSupabaseServerClient();
-  const { error } = await sb.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: `${await origin()}/auth/callback` },
-  });
-  if (error) redirect(`/login?erro=${encodeURIComponent(error.message)}`);
-  redirect("/login?enviado=1");
-}
-
 /** Login por e-mail + senha. */
 export async function entrarComSenha(formData: FormData) {
   const cred = parseCredenciais(formData.get("email"), formData.get("senha"));
