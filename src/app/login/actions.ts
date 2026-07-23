@@ -1,11 +1,14 @@
 "use server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { z } from "zod";
 import { createSupabaseServerClient } from "@/adapters/supabase/client";
-
-const emailSchema = z.string().trim().email("E-mail inválido");
-const senhaSchema = z.string().min(6, "Senha precisa de ao menos 6 caracteres");
+import {
+  destinoCadastro,
+  destinoErroLogin,
+  mensagemErroCadastro,
+  parseCredenciais,
+  parseEmail,
+} from "@/application/auth-fluxo";
 
 async function origin(): Promise<string> {
   const h = await headers();
@@ -16,52 +19,69 @@ async function origin(): Promise<string> {
 
 /** Magic link por e-mail (RF01). Limitado no free-tier (~poucos/hora). */
 export async function enviarMagicLink(formData: FormData) {
-  const parsed = emailSchema.safeParse(formData.get("email"));
-  if (!parsed.success) redirect(`/login?erro=${encodeURIComponent("E-mail inválido")}`);
+  const email = parseEmail(formData.get("email"));
+  if (!email) redirect(`/login?erro=${encodeURIComponent("E-mail inválido")}`);
 
   const sb = await createSupabaseServerClient();
   const { error } = await sb.auth.signInWithOtp({
-    email: parsed.data,
+    email,
     options: { emailRedirectTo: `${await origin()}/auth/callback` },
   });
   if (error) redirect(`/login?erro=${encodeURIComponent(error.message)}`);
   redirect("/login?enviado=1");
 }
 
-/** Login por e-mail + senha (rápido, sem e-mail — bom pra dev). */
+/** Login por e-mail + senha. */
 export async function entrarComSenha(formData: FormData) {
-  const email = emailSchema.safeParse(formData.get("email"));
-  const senha = senhaSchema.safeParse(formData.get("senha"));
-  if (!email.success || !senha.success) {
-    redirect(`/login?erro=${encodeURIComponent("E-mail ou senha inválidos")}`);
-  }
+  const cred = parseCredenciais(formData.get("email"), formData.get("senha"));
+  if (!cred.ok) redirect(`/login?erro=${encodeURIComponent("E-mail ou senha inválidos")}`);
 
   const sb = await createSupabaseServerClient();
   const { error } = await sb.auth.signInWithPassword({
-    email: email.data,
-    password: senha.data,
+    email: cred.email,
+    password: cred.senha,
   });
-  if (error) redirect(`/login?erro=${encodeURIComponent(error.message)}`);
+  if (error) redirect(destinoErroLogin(error.code));
   redirect("/");
 }
 
-/** Criar conta por e-mail + senha. Sem confirmação de e-mail = loga na hora. */
+/**
+ * Criar conta por e-mail + senha. Com "Confirm email" LIGADO no Supabase, não
+ * vem sessão — o usuário precisa clicar no link do e-mail (que volta pro
+ * /auth/callback graças ao emailRedirectTo). Sem confirmação, loga na hora.
+ */
 export async function cadastrarComSenha(formData: FormData) {
-  const email = emailSchema.safeParse(formData.get("email"));
-  const senha = senhaSchema.safeParse(formData.get("senha"));
-  if (!email.success || !senha.success) {
+  const cred = parseCredenciais(formData.get("email"), formData.get("senha"));
+  if (!cred.ok) {
     redirect(`/login?erro=${encodeURIComponent("E-mail inválido ou senha curta (mín. 6)")}`);
   }
 
   const sb = await createSupabaseServerClient();
   const { data, error } = await sb.auth.signUp({
-    email: email.data,
-    password: senha.data,
+    email: cred.email,
+    password: cred.senha,
+    options: { emailRedirectTo: `${await origin()}/auth/callback` },
+  });
+  if (error) {
+    redirect(`/login?erro=${encodeURIComponent(mensagemErroCadastro(error.code, error.message))}`);
+  }
+
+  redirect(destinoCadastro({ temSessao: Boolean(data.session) }));
+}
+
+/** Reenvia o e-mail de confirmação (link expirou / não chegou). */
+export async function reenviarConfirmacao(formData: FormData) {
+  const email = parseEmail(formData.get("email"));
+  if (!email) {
+    redirect(`/login?erro=${encodeURIComponent("Informe um e-mail válido para reenviar.")}`);
+  }
+
+  const sb = await createSupabaseServerClient();
+  const { error } = await sb.auth.resend({
+    type: "signup",
+    email,
+    options: { emailRedirectTo: `${await origin()}/auth/callback` },
   });
   if (error) redirect(`/login?erro=${encodeURIComponent(error.message)}`);
-
-  // Com "Confirm email" desligado, já vem sessão -> vai pra home.
-  // Com confirmação ligada, não vem sessão -> avisa pra confirmar e-mail.
-  if (data.session) redirect("/");
-  redirect("/login?confirme=1");
+  redirect("/login?reenviado=1");
 }
