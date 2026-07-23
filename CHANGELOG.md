@@ -1,3 +1,15 @@
+# [1.2.0](https://github.com/lacerdaRodrigo/projeto-casamento/compare/v1.1.0...v1.2.0) (2026-07-23)
+
+
+### Bug Fixes
+
+* **ui:** corrige layout do painel e da linha do item em telas pequenas ([5cf4800](https://github.com/lacerdaRodrigo/projeto-casamento/commit/5cf4800352beaa8ef33ccaf355e174086fe08a1b))
+
+
+### Features
+
+* **item:** rotula os campos do item e mostra telefone e link do fornecedor ([71c05e7](https://github.com/lacerdaRodrigo/projeto-casamento/commit/71c05e74c92747e24a216e2fc380f56d7c67d157))
+
 # [1.1.0](https://github.com/lacerdaRodrigo/projeto-casamento/compare/v1.0.21...v1.1.0) (2026-07-23)
 
 
