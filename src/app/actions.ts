@@ -12,16 +12,15 @@ import { SupabaseCasorioRepository } from "@/adapters/supabase/casorio-repositor
 import { mudarStatusItem } from "@/application/mudar-status-item";
 import { semearTemplate } from "@/application/semear-template";
 import { editarItem } from "@/application/editar-item";
-import { criarTemaCompleto, criarSubtemaCompleto } from "@/application/montar-arvore";
+import { criarItemNoTema } from "@/application/criar-item-no-tema";
 import { urlComMensagem } from "@/application/voltar-para";
 import {
   mensagemDeErro,
   parseCasorio,
-  parseCompositorSubtema,
-  parseCompositorTema,
   parseEditarItem,
   parseId,
   parseItem,
+  parseItemNoTema,
   parseMudarStatus,
   parseRenomear,
   parseSubtema,
@@ -107,21 +106,12 @@ export async function criarSubtemaAction(formData: FormData) {
   });
 }
 
-/** Compositor da tela Montar: cria tema já com custo/essencial (semeia 1 item). */
-export async function criarTemaCompletoAction(formData: FormData) {
-  await executar(formData, "Tema criado", async () => {
-    const data = parseCompositorTema(formData);
+/** Item com preço adicionado DIRETO no tema (cai no subtema "solto" oculto). */
+export async function criarItemNoTemaAction(formData: FormData) {
+  await executar(formData, "Item criado", async () => {
+    const data = parseItemNoTema(formData);
     const repo = await getRepo();
-    await criarTemaCompleto(repo, data);
-  });
-}
-
-/** Compositor da tela Montar: cria subtema já com custo/essencial (semeia 1 item). */
-export async function criarSubtemaCompletoAction(formData: FormData) {
-  await executar(formData, "Subtema criado", async () => {
-    const data = parseCompositorSubtema(formData);
-    const repo = await getRepo();
-    await criarSubtemaCompleto(repo, data);
+    await criarItemNoTema(repo, data);
   });
 }
 

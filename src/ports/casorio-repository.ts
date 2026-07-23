@@ -71,6 +71,11 @@ export interface CasorioRepository {
   criarTema(input: NovoTema): Promise<Tema>;
   criarSubtema(input: NovoSubtema): Promise<Subtema>;
   criarItem(input: NovoItem): Promise<Item>;
+  /**
+   * Subtema "solto" do tema (abriga itens adicionados direto no tema). Retorna
+   * o existente ou cria um novo. Oculto na UI (nome reservado SUBTEMA_SOLTOS).
+   */
+  garantirSubtemaPadrao(temaId: string, casorioId: string): Promise<Subtema>;
   /** Muda o status do item (custo real em centavos quando exigido). */
   mudarStatusItem(itemId: string, status: StatusItem, custoReal: Centavos): Promise<Item>;
 
