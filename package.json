@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "smoke:login": "node scripts/smoke-login.mjs"
+    "smoke:login": "node scripts/smoke-login.mjs",
+    "seed:conta": "node scripts/seed-user.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
