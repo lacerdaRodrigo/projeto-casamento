@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "smoke:login": "node scripts/smoke-login.mjs",
-    "seed:conta": "node scripts/seed-user.mjs"
+    "seed:conta": "node scripts/seed-user.mjs",
+    "test:rls": "node scripts/test-rls.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
