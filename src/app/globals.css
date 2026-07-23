@@ -1299,17 +1299,18 @@ button.excluir:focus-visible {
   display: flex;
   flex-wrap: wrap;
   /* quando os campos empilham (celular), o respiro entre eles vem daqui */
-  gap: 0.3rem 0.9rem;
-  margin-top: 0.3rem;
-  font-size: 0.78rem;
-  line-height: 1.35;
-  color: var(--muted-2);
+  gap: 0.5rem 1.2rem;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text);
 }
 /* "Data-alvo:", "Fornecedor:", "Telefone:"… — sem rótulo a pessoa não sabe
-   o que o valor significa. */
+   o que o valor significa. Rótulo apagado, valor legível: o olho separa os
+   dois sem precisar de mais espaço. */
 .rotulo-campo {
   font-weight: 600;
-  color: var(--muted);
+  color: var(--muted-2);
 }
 .item-linha2 a {
   color: var(--accent-strong);
@@ -1327,9 +1328,9 @@ button.excluir:focus-visible {
   white-space: nowrap;
 }
 .observacao {
-  margin: 0.35rem 0 0;
+  margin: 0.5rem 0 0;
   font-size: 0.82rem;
-  line-height: 1.35;
+  line-height: 1.45;
   color: var(--muted);
   font-style: italic;
 }
@@ -1348,7 +1349,7 @@ button.excluir:focus-visible {
       "dot corpo acoes"
       ".   valor valor"
       "editor editor editor";
-    row-gap: 0.35rem;
+    row-gap: 0.5rem;
   }
   /* dissolve a coluna do lado: valor e ações viram células do próprio grid */
   .item-lado {
@@ -1363,7 +1364,7 @@ button.excluir:focus-visible {
   /* comparação passa a ler da esquerda pra direita, junto do resto da linha */
   .valor-item.comparacao {
     justify-content: flex-start;
-    gap: 0.1rem 0.8rem;
+    gap: 0.4rem 1.1rem;
   }
   .valor-cel {
     align-items: flex-start;
@@ -1371,6 +1372,19 @@ button.excluir:focus-visible {
   .item-linha1 .item-valor,
   .item-linha1 .valor-item {
     margin-left: 0;
+  }
+  /* um campo por linha: sem meio-campo pendurado no fim da linha anterior */
+  .item-linha2 {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .campo-link {
+    max-width: 100%;
+  }
+  /* item vizinho também precisa de ar, senão os blocos viram um bolo só */
+  .item {
+    padding: 0.9rem 0;
   }
 }
 
