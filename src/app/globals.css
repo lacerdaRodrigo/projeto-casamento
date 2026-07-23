@@ -6,20 +6,23 @@
 
 :root,
 :root[data-theme="escuro"] {
-  --bg: #242739;
-  --bg-grad: radial-gradient(130% 90% at 12% -8%, #2c3049 0%, #242739 55%);
-  --surface: #2f3346;
-  --surface-2: #282b3d;
-  --text: #e9e9ed;
-  --muted: #a2a4b4;
-  --muted-2: #7c7e90;
-  --line: rgba(233, 233, 237, 0.13);
+  --bg: #1c1e2c;
+  --bg-grad: radial-gradient(130% 90% at 12% -8%, #262a42 0%, #1c1e2c 58%);
+  --surface: #2c3046;
+  --surface-2: #23273a;
+  --text: #edeef3;
+  --muted: #a7a9ba;
+  --muted-2: #8b8da2;
+  --line: rgba(233, 233, 237, 0.16);
 
   --accent: #9184d9;
   --accent-strong: #b8aeec;
   --accent-soft: #2e2953;
   --accent-border: #544a91;
   --accent-fill: #7d6fce;
+
+  /* cor dos subtemas — roxo mais claro (boa leitura no escuro) */
+  --sub: var(--accent-strong);
 
   --track: #20222f;
   --neutral-line: #3b3e52;
@@ -58,6 +61,9 @@
   --accent-soft: #fbeeec;
   --accent-border: #e6cdc9;
   --accent-fill: #b5645f;
+
+  /* roxo/accent mais escuro pra contrastar no fundo claro */
+  --sub: var(--accent-strong);
 
   --track: #efe9e5;
   --neutral-line: #e7e1dc;
@@ -1110,16 +1116,20 @@ button.excluir:focus-visible {
 }
 
 .subtema {
-  border-left: 2px solid var(--neutral-line);
-  padding-left: 1rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--sub);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--sub) 7%, var(--surface));
+  padding: 0.6rem 0.85rem 0.35rem;
   margin: 1rem 0;
 }
 .subtema h4 {
   margin: 0;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
+  font-size: 0.76rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--muted-2);
+  font-weight: 700;
+  color: var(--sub);
 }
 
 /* ---------- item ---------- */
