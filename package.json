@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "smoke:login": "node scripts/smoke-login.mjs",
     "seed:conta": "node scripts/seed-user.mjs",
-    "test:rls": "node scripts/test-rls.mjs"
+    "test:rls": "node scripts/test-rls.mjs",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
@@ -23,6 +24,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.4",
     "@types/react-dom": "^19.0.2",

@@ -17,6 +17,12 @@ coverage
 *.tsbuildinfo
 next-env.d.ts
 
+# playwright (E2E)
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache
+
 # arquivos de trabalho / handoff de design (não versionar)
 /image*.png
 /Captura de tela*
