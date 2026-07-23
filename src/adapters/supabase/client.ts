@@ -1,14 +1,10 @@
-// Clients Supabase (browser + server) via @supabase/ssr.
-// O server client usa o TOKEN DO USUÁRIO (cookies) — assim o RLS é a garantia
-// real (PRD §4.4). A service_role key nunca é usada.
-import { createBrowserClient, createServerClient, type CookieOptions } from "@supabase/ssr";
+// Client Supabase (servidor) via @supabase/ssr. Usa o TOKEN DO USUÁRIO
+// (cookies) — assim o RLS é a garantia real (PRD §4.4). A service_role nunca é
+// usada. (O client de browser foi removido: o app só fala com o Supabase pelo
+// servidor.)
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { supabaseAnonKey, supabaseUrl } from "./env";
-
-/** Client pro browser (componentes client). */
-export function createSupabaseBrowserClient() {
-  return createBrowserClient(supabaseUrl(), supabaseAnonKey());
-}
 
 /** Client pro servidor (Server Components, Server Actions, Route Handlers). */
 export async function createSupabaseServerClient() {
