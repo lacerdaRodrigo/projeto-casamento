@@ -538,6 +538,21 @@ details.editor.ajustar[open] > summary {
   border: none;
   padding: 0;
 }
+/* mobile: o dropdown estourava a tela (right:0 absoluto). Vira painel
+   centralizado, sempre visível e rolável. */
+@media (max-width: 560px) {
+  .ajustar-painel {
+    position: fixed;
+    left: 50%;
+    right: auto;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(92vw, 380px);
+    max-height: 82vh;
+    overflow-y: auto;
+    z-index: 60;
+  }
+}
 
 /* ---------- hero: contagem + progresso ---------- */
 .hero {
