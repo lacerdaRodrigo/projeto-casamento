@@ -53,8 +53,9 @@ export default async function MontarPage({
   if (!user) redirect("/login");
 
   const repo = new SupabaseCasorioRepository(sb);
-  const [casorio, arvore] = await Promise.all([repo.meuCasorio(), repo.getMinhaArvore()]);
-  if (!casorio) redirect("/");
+  const dados = await repo.meuCasorioComArvore();
+  if (!dados) redirect("/");
+  const { casorio, arvore } = dados;
 
   const hoje = hojeSaoPaulo();
 

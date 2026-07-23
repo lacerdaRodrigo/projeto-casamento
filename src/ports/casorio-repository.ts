@@ -62,6 +62,12 @@ export interface CasorioRepository {
    * árvore em paralelo, cortando um round-trip por navegação.
    */
   getMinhaArvore(): Promise<TemaComFilhos[]>;
+  /**
+   * Casório do usuário + árvore inteira numa QUERY só (embed aninhado). Um
+   * round-trip em vez de dois — cada save dispara um render, então isso pesa.
+   * null quando o usuário ainda não tem casório.
+   */
+  meuCasorioComArvore(): Promise<{ casorio: Casorio; arvore: TemaComFilhos[] } | null>;
   criarTema(input: NovoTema): Promise<Tema>;
   criarSubtema(input: NovoSubtema): Promise<Subtema>;
   criarItem(input: NovoItem): Promise<Item>;

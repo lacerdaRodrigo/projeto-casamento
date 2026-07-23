@@ -144,9 +144,10 @@ export default async function Home({
   if (!user) redirect("/login");
 
   const repo = new SupabaseCasorioRepository(sb);
-  // casório e árvore em paralelo — o RLS escopa a árvore ao casal (V1 = 1 casório).
-  const [casorio, arvore] = await Promise.all([repo.meuCasorio(), repo.getMinhaArvore()]);
-  if (!casorio) return <Onboarding />;
+  // casório + árvore numa query só (1 round-trip). RLS escopa ao casal.
+  const dados = await repo.meuCasorioComArvore();
+  if (!dados) return <Onboarding />;
+  const { casorio, arvore } = dados;
   // o "hoje" é resolvido AQUI (borda) e injetado no núcleo (D08)
   const hoje = hojeSaoPaulo();
   const dias = casorio.dataCasamento ? diasEntre(hoje, casorio.dataCasamento) : null;

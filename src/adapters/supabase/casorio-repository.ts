@@ -135,6 +135,23 @@ export class SupabaseCasorioRepository implements CasorioRepository {
     return this.montarArvore(data);
   }
 
+  async meuCasorioComArvore(): Promise<{ casorio: Casorio; arvore: TemaComFilhos[] } | null> {
+    // Casório + árvore inteira num embed aninhado só (1 round-trip). RLS escopa.
+    const { data, error } = await this.sb
+      .from("casorio")
+      .select("*, tema(*, subtema(*, item(*)))")
+      .order("created_at", { ascending: true })
+      .limit(1);
+    if (error) throw new Error(`meuCasorioComArvore: ${error.message}`);
+    if (!data || data.length === 0) return null;
+
+    const row = data[0];
+    return {
+      casorio: mapCasorio(row),
+      arvore: this.montarArvore((row.tema as Row[]) ?? null),
+    };
+  }
+
   async criarTema(input: NovoTema): Promise<Tema> {
     const { data, error } = await this.sb
       .from("tema")
