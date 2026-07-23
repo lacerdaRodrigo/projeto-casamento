@@ -665,7 +665,8 @@ details.editor.ajustar[open] > summary {
 }
 .numeros {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  /* min(100%, 128px): em telas bem estreitas a coluna vira 1fr em vez de estourar */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 128px), 1fr));
   gap: 0.9rem;
 }
 .numeros > div {
@@ -675,8 +676,10 @@ details.editor.ajustar[open] > summary {
   min-width: 0;
 }
 .numeros b {
-  font-size: 1.3rem;
+  /* valor acompanha a largura disponível: sem isso "R$ 30.000,00" trunca em celular */
+  font-size: clamp(0.95rem, 4.1vw, 1.3rem);
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1305,6 +1308,42 @@ button.excluir:focus-visible {
   font-size: 0.82rem;
   color: var(--muted);
   font-style: italic;
+}
+
+/* Em celular a coluna do lado (valor + ✏️🗑️) espremia o nome do item, que
+   quebrava em várias linhas. Abaixo de 560px ela desce pra linha de baixo, em
+   largura total: nome fica com a largura toda e o valor ganha espaço. */
+@media (max-width: 560px) {
+  .item {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "dot corpo acoes"
+      ".   valor valor"
+      "editor editor editor";
+    row-gap: 0.35rem;
+  }
+  /* dissolve a coluna do lado: valor e ações viram células do próprio grid */
+  .item-lado {
+    display: contents;
+  }
+  .item-lado > .valor-item {
+    grid-area: valor;
+  }
+  .item-acoes {
+    grid-area: acoes;
+  }
+  /* comparação passa a ler da esquerda pra direita, junto do resto da linha */
+  .valor-item.comparacao {
+    justify-content: flex-start;
+    gap: 0.1rem 0.8rem;
+  }
+  .valor-cel {
+    align-items: flex-start;
+  }
+  .item-linha1 .item-valor,
+  .item-linha1 .valor-item {
+    margin-left: 0;
+  }
 }
 
 .item:target {
