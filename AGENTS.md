@@ -35,4 +35,5 @@ Pastas: `/domain /application /ports /adapters/supabase /app /components` · `/s
 Comece sempre pela **fatia vertical** (§7.1): entrar → ver a árvore → mexer num item → ver painel e trilha reagirem.
 
 ## Comandos
-`npm run dev` · `npm test` · `npm run test:e2e` · `npm run lint` · `npm run typecheck` · `supabase start` · `supabase db reset`
+`npm run dev` · `npm test` · `npm run test:e2e` · `npm run test:rls` · `npm run typecheck` · `npm run build` · `npm run seed:conta`
+> Dev usa o **Supabase da nuvem** (não local); login por conta fixa (`.env.local` + `seed:conta`). Deploy/versão automáticos no push da `main`. Detalhes de operação em `docs/pendencias.md`.
