@@ -1100,7 +1100,9 @@ function EditorItem({
         )}
 
       <div className="acoes-form">
-        <SubmitButton mensagemSucesso="Item salvo">Salvar item</SubmitButton>
+        <SubmitButton mensagemSucesso="Item salvo" fechaItemId={item.id}>
+          Salvar item
+        </SubmitButton>
       </div>
     </form>
   );
@@ -1132,7 +1134,7 @@ function FormStatus({ item, voltarPara }: { item: Item; voltarPara: string }) {
             />
           </span>
         )}
-        <SubmitButton className="leve" mensagemSucesso="Status atualizado">
+        <SubmitButton className="leve" mensagemSucesso="Status atualizado" fechaItemId={item.id}>
           Salvar
         </SubmitButton>
       </form>
