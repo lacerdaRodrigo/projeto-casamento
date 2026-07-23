@@ -16,6 +16,7 @@ import {
 } from "@/domain/prazo";
 import { progressoDe, type Progresso } from "@/domain/progresso";
 import { ehSoltos } from "@/domain/subtema-soltos";
+import { MOSTRAR_ADD_SUBTEMA } from "./ui-flags";
 import { camposDoItemNaArvore } from "@/domain/campos-item";
 import {
   contarItens,
@@ -775,18 +776,20 @@ function Tema({
           />
         ))}
 
-        <Compositor
-          action={criarSubtemaAction}
-          ocultos={[
-            { name: "voltarPara", value: voltarPara },
-            { name: "casorioId", value: casorioId },
-            { name: "temaId", value: tema.id },
-          ]}
-          campoNome="nome"
-          placeholder="Novo subtema (ex.: Bebidas)"
-          rotuloAbrir="+ Subtema (opcional)"
-          comCustoEssencial={false}
-        />
+        {MOSTRAR_ADD_SUBTEMA && (
+          <Compositor
+            action={criarSubtemaAction}
+            ocultos={[
+              { name: "voltarPara", value: voltarPara },
+              { name: "casorioId", value: casorioId },
+              { name: "temaId", value: tema.id },
+            ]}
+            campoNome="nome"
+            placeholder="Novo subtema (ex.: Bebidas)"
+            rotuloAbrir="+ Subtema (opcional)"
+            comCustoEssencial={false}
+          />
+        )}
       </div>
     </details>
   );

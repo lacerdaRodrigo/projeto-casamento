@@ -6,6 +6,7 @@ import { SupabaseCasorioRepository } from "@/adapters/supabase/casorio-repositor
 import { isResolvido } from "@/domain/status";
 import { classificarPrazo } from "@/domain/prazo";
 import { ehSoltos } from "@/domain/subtema-soltos";
+import { MOSTRAR_ADD_SUBTEMA } from "../ui-flags";
 import type { Item, SubtemaComItens, TemaComFilhos } from "@/domain/entities";
 import { BotaoExcluir } from "@/components/botao-excluir";
 import { Compositor } from "@/components/compositor";
@@ -193,18 +194,20 @@ function TemaEditor({
           <SubtemaEditor key={sub.id} subtema={sub} casorioId={casorioId} hoje={hoje} />
         ))}
 
-        <Compositor
-          action={criarSubtemaAction}
-          ocultos={[
-            { name: "voltarPara", value: VOLTAR },
-            { name: "temaId", value: tema.id },
-            { name: "casorioId", value: casorioId },
-          ]}
-          campoNome="nome"
-          placeholder="Novo subtema (ex.: Bebidas)"
-          rotuloAbrir="+ Subtema (opcional)"
-          comCustoEssencial={false}
-        />
+        {MOSTRAR_ADD_SUBTEMA && (
+          <Compositor
+            action={criarSubtemaAction}
+            ocultos={[
+              { name: "voltarPara", value: VOLTAR },
+              { name: "temaId", value: tema.id },
+              { name: "casorioId", value: casorioId },
+            ]}
+            campoNome="nome"
+            placeholder="Novo subtema (ex.: Bebidas)"
+            rotuloAbrir="+ Subtema (opcional)"
+            comCustoEssencial={false}
+          />
+        )}
       </div>
     </details>
   );
