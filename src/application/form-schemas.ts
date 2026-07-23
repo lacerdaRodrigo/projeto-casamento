@@ -2,6 +2,7 @@
 // Separado das server actions PRA SER TESTÁVEL: aqui mora o contrato entre o
 // nome do campo no HTML e o que o caso de uso recebe.
 import { z } from "zod";
+import { SUBTEMA_SOLTOS } from "@/domain/subtema-soltos";
 
 /** Dinheiro chega já em CENTAVOS (inteiro) do <CampoDinheiro>. Nunca float. */
 export const centavosSchema = z.coerce.number().int().min(0);
@@ -79,10 +80,17 @@ export function parseTema(fd: FormData) {
 }
 
 // --- subtema -----------------------------------------------------------------
+// Nome de grupo: obrigatório e NÃO pode ser o nome reservado do subtema oculto
+// de itens soltos (senão colidiria com o grupo interno). Vale pra criar/renomear.
+const nomeGrupo = (rotulo: string) =>
+  textoObrigatorio(rotulo).refine((n) => n !== SUBTEMA_SOLTOS, {
+    message: `"${SUBTEMA_SOLTOS}" é um nome reservado`,
+  });
+
 export const subtemaSchema = z.object({
   temaId: z.string().uuid(),
   casorioId: z.string().uuid(),
-  nome: textoObrigatorio("Nome do subtema"),
+  nome: nomeGrupo("Nome do subtema"),
 });
 
 export function parseSubtema(fd: FormData) {
@@ -90,47 +98,6 @@ export function parseSubtema(fd: FormData) {
     temaId: fd.get("temaId"),
     casorioId: fd.get("casorioId"),
     nome: fd.get("nome"),
-  });
-}
-
-// --- compositores da tela "Montar" (form sempre completo) --------------------
-// Tema/subtema podem nascer já com "tem custo"/"essencial" — que no domínio só
-// existem em ITEM. O caso de uso (montar-arvore) semeia o primeiro item.
-export const compositorTemaSchema = z.object({
-  casorioId: z.string().uuid(),
-  nome: textoObrigatorio("Nome do tema"),
-  temCusto: z.boolean(),
-  custoEstimado: centavosSchema,
-  essencial: z.boolean(),
-});
-
-export function parseCompositorTema(fd: FormData) {
-  return compositorTemaSchema.parse({
-    casorioId: fd.get("casorioId"),
-    nome: fd.get("nome"),
-    temCusto: checkbox(fd, "temCusto"),
-    custoEstimado: centavos(fd, "custoEstimadoCentavos"),
-    essencial: checkbox(fd, "essencial"),
-  });
-}
-
-export const compositorSubtemaSchema = z.object({
-  temaId: z.string().uuid(),
-  casorioId: z.string().uuid(),
-  nome: textoObrigatorio("Nome do subtema"),
-  temCusto: z.boolean(),
-  custoEstimado: centavosSchema,
-  essencial: z.boolean(),
-});
-
-export function parseCompositorSubtema(fd: FormData) {
-  return compositorSubtemaSchema.parse({
-    temaId: fd.get("temaId"),
-    casorioId: fd.get("casorioId"),
-    nome: fd.get("nome"),
-    temCusto: checkbox(fd, "temCusto"),
-    custoEstimado: centavos(fd, "custoEstimadoCentavos"),
-    essencial: checkbox(fd, "essencial"),
   });
 }
 
@@ -148,6 +115,30 @@ export const itemSchema = z.object({
 export function parseItem(fd: FormData) {
   return itemSchema.parse({
     subtemaId: fd.get("subtemaId"),
+    casorioId: fd.get("casorioId"),
+    titulo: fd.get("titulo"),
+    temCusto: checkbox(fd, "temCusto"),
+    custoEstimado: centavos(fd, "custoEstimadoCentavos"),
+    dataAlvo: (fd.get("dataAlvo") as string) || null,
+    essencial: checkbox(fd, "essencial"),
+  });
+}
+
+// Item adicionado DIRETO no tema (cai no subtema "solto"). Igual ao item, mas
+// vem `temaId` em vez de `subtemaId` — o caso de uso resolve o subtema.
+export const itemNoTemaSchema = z.object({
+  temaId: z.string().uuid(),
+  casorioId: z.string().uuid(),
+  titulo: textoObrigatorio("Título do item"),
+  temCusto: z.boolean(),
+  custoEstimado: centavosSchema,
+  dataAlvo: dataOpcional,
+  essencial: z.boolean(),
+});
+
+export function parseItemNoTema(fd: FormData) {
+  return itemNoTemaSchema.parse({
+    temaId: fd.get("temaId"),
     casorioId: fd.get("casorioId"),
     titulo: fd.get("titulo"),
     temCusto: checkbox(fd, "temCusto"),
@@ -188,7 +179,7 @@ function textoOpcional(fd: FormData, campo: string): string | null {
 
 export const renomearSchema = z.object({
   id: z.string().uuid("Identificador inválido"),
-  nome: textoObrigatorio("Nome"),
+  nome: nomeGrupo("Nome"),
 });
 
 /** Renomear tema/subtema (RF04/RF05). `campoId` diz de quem é o id. */

@@ -17,6 +17,7 @@ export function SubmitButton({
   className,
   mensagemSucesso = "Salvo ✅",
   onConcluir,
+  fechaItemId,
 }: {
   children: React.ReactNode;
   pendente?: string;
@@ -24,6 +25,8 @@ export function SubmitButton({
   /** Texto do toast verde no sucesso. null = não mostrar toast. */
   mensagemSucesso?: string | null;
   onConcluir?: () => void;
+  /** Ao concluir com sucesso, fecha o editor deste item (AcoesItem escuta). */
+  fechaItemId?: string;
 }) {
   const { pending } = useFormStatus();
   const antes = useRef(false);
@@ -34,11 +37,16 @@ export function SubmitButton({
     if (!concluiu) return;
 
     onConcluir?.();
-    if (mensagemSucesso == null) return;
-    // agenda o toast; se a página navegar por erro, o cleanup cancela antes
-    const t = window.setTimeout(() => dispararToast(mensagemSucesso, "ok"), 0);
+    // agenda toast + fechar editor; se a página navegar por erro (redirect),
+    // o cleanup cancela antes (aí quem mostra é o ?erro= da URL).
+    const t = window.setTimeout(() => {
+      if (mensagemSucesso != null) dispararToast(mensagemSucesso, "ok");
+      if (fechaItemId) {
+        window.dispatchEvent(new CustomEvent("casorio:fechar-item", { detail: { id: fechaItemId } }));
+      }
+    }, 0);
     return () => window.clearTimeout(t);
-  }, [pending, mensagemSucesso, onConcluir]);
+  }, [pending, mensagemSucesso, onConcluir, fechaItemId]);
 
   return (
     <button type="submit" className={className} disabled={pending} aria-busy={pending}>

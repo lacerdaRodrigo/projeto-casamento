@@ -38,15 +38,10 @@ test.describe("fatia vertical", () => {
     const aba = page.getByRole("button", { name: TEMA, exact: true });
     await expect(aba).toBeVisible({ timeout: 15_000 });
 
-    // --- abrir o tema e criar um subtema + item ---
+    // --- abrir o tema e adicionar um item com preço DIRETO no tema ---
     await aba.click();
-    await page.getByRole("button", { name: "+ Subtema" }).click();
-    await page.getByPlaceholder("Novo subtema (ex.: Bebidas)").fill("Geral E2E");
-    await page.getByRole("button", { name: "Salvar" }).click();
-    await expect(page.getByText("Geral E2E")).toBeVisible({ timeout: 15_000 });
-
-    await page.getByRole("button", { name: "+ Item" }).click();
-    await page.getByPlaceholder("Novo item (ex.: Refrigerante)").fill("Item E2E");
+    await page.getByRole("button", { name: "+ Item" }).first().click();
+    await page.getByPlaceholder("Adicionar item (ex.: Com catupiry)").fill("Item E2E");
     await page.getByRole("button", { name: "Salvar" }).click();
     await expect(page.getByText("Item E2E")).toBeVisible({ timeout: 15_000 });
 

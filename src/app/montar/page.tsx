@@ -5,6 +5,8 @@ import { SupabaseAuthService } from "@/adapters/supabase/auth-service";
 import { SupabaseCasorioRepository } from "@/adapters/supabase/casorio-repository";
 import { isResolvido } from "@/domain/status";
 import { classificarPrazo } from "@/domain/prazo";
+import { ehSoltos } from "@/domain/subtema-soltos";
+import { MOSTRAR_ADD_SUBTEMA } from "../ui-flags";
 import type { Item, SubtemaComItens, TemaComFilhos } from "@/domain/entities";
 import { BotaoExcluir } from "@/components/botao-excluir";
 import { Compositor } from "@/components/compositor";
@@ -16,8 +18,9 @@ import { TAMANHO_TEMPLATE } from "@/application/semear-template";
 import {
   carregarModeloAction,
   criarItemAction,
-  criarSubtemaCompletoAction,
-  criarTemaCompletoAction,
+  criarItemNoTemaAction,
+  criarSubtemaAction,
+  criarTemaAction,
   excluirItemAction,
   excluirSubtemaAction,
   excluirTemaAction,
@@ -107,7 +110,7 @@ export default async function MontarPage({
       </div>
 
       <Compositor
-        action={criarTemaCompletoAction}
+        action={criarTemaAction}
         ocultos={[
           { name: "voltarPara", value: VOLTAR },
           { name: "casorioId", value: casorio.id },
@@ -115,6 +118,7 @@ export default async function MontarPage({
         campoNome="nome"
         placeholder="Novo tema (ex.: Comida)"
         rotuloAbrir="+ Novo tema"
+        comCustoEssencial={false}
       />
     </main>
   );
@@ -129,11 +133,10 @@ function TemaEditor({
   casorioId: string;
   hoje: string;
 }) {
+  const soltos = tema.subtemas.find((s) => ehSoltos(s.nome));
+  const grupos = tema.subtemas.filter((s) => !ehSoltos(s.nome));
   const itens = tema.subtemas.flatMap((s) => s.itens);
-  const resumo =
-    tema.subtemas.length === 0
-      ? "vazio"
-      : `${contar(tema.subtemas.length, "subtema", "subtemas")} · ${contar(itens.length, "item", "itens")}`;
+  const resumo = itens.length === 0 && grupos.length === 0 ? "vazio" : contar(itens.length, "item", "itens");
 
   return (
     <details className="tema" open>
@@ -165,25 +168,46 @@ function TemaEditor({
           </form>
         </div>
 
-        {tema.subtemas.length === 0 && (
-          <p className="sub mini">Nenhum subtema ainda. Adicione o primeiro abaixo.</p>
+        {/* itens soltos: direto no tema, sem cabeçalho de subtema */}
+        {soltos && soltos.itens.length > 0 && (
+          <div className="montar-itens">
+            {soltos.itens.map((item) => (
+              <ItemEditorLinha key={item.id} item={item} hoje={hoje} />
+            ))}
+          </div>
         )}
 
-        {tema.subtemas.map((sub) => (
-          <SubtemaEditor key={sub.id} subtema={sub} casorioId={casorioId} hoje={hoje} />
-        ))}
-
         <Compositor
-          action={criarSubtemaCompletoAction}
+          action={criarItemNoTemaAction}
           ocultos={[
             { name: "voltarPara", value: VOLTAR },
             { name: "temaId", value: tema.id },
             { name: "casorioId", value: casorioId },
           ]}
-          campoNome="nome"
-          placeholder="Novo subtema (ex.: Bebidas)"
-          rotuloAbrir="+ Subtema"
+          campoNome="titulo"
+          placeholder="Adicionar item (ex.: Com catupiry)"
+          rotuloAbrir="+ Item"
         />
+
+        {/* subtemas nomeados: agrupamento opcional */}
+        {grupos.map((sub) => (
+          <SubtemaEditor key={sub.id} subtema={sub} casorioId={casorioId} hoje={hoje} />
+        ))}
+
+        {MOSTRAR_ADD_SUBTEMA && (
+          <Compositor
+            action={criarSubtemaAction}
+            ocultos={[
+              { name: "voltarPara", value: VOLTAR },
+              { name: "temaId", value: tema.id },
+              { name: "casorioId", value: casorioId },
+            ]}
+            campoNome="nome"
+            placeholder="Novo subtema (ex.: Bebidas)"
+            rotuloAbrir="+ Subtema (opcional)"
+            comCustoEssencial={false}
+          />
+        )}
       </div>
     </details>
   );

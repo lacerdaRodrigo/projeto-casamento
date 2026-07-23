@@ -2,7 +2,7 @@
 // Coluna direita do item: valor (estimado × real) em cima e, abaixo, os ícones
 // ✏️ Editar e 🗑️ Excluir. O ✏️ abre/fecha o editor, que aparece em LARGURA
 // TOTAL embaixo da linha (recebido como `editor`).
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { BotaoExcluir } from "./botao-excluir";
 import { ValorItem } from "./valor-item";
 import { excluirItemAction } from "@/app/actions";
@@ -25,6 +25,17 @@ export function AcoesItem({
   editor: ReactNode;
 }) {
   const [editando, setEditando] = useState(false);
+
+  // fecha o editor quando QUALQUER "Salvar" deste item concluir (status rápido
+  // ou "Salvar item") — some o modal grande depois de salvar.
+  useEffect(() => {
+    function aoSalvar(e: Event) {
+      const id = (e as CustomEvent<{ id: string }>).detail?.id;
+      if (id === itemId) setEditando(false);
+    }
+    window.addEventListener("casorio:fechar-item", aoSalvar);
+    return () => window.removeEventListener("casorio:fechar-item", aoSalvar);
+  }, [itemId]);
 
   return (
     <>

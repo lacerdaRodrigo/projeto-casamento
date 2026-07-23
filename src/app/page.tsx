@@ -15,6 +15,8 @@ import {
   type SituacaoPrazo,
 } from "@/domain/prazo";
 import { progressoDe, type Progresso } from "@/domain/progresso";
+import { ehSoltos } from "@/domain/subtema-soltos";
+import { MOSTRAR_ADD_SUBTEMA } from "./ui-flags";
 import { camposDoItemNaArvore } from "@/domain/campos-item";
 import {
   contarItens,
@@ -39,8 +41,9 @@ import {
   carregarModeloAction,
   criarCasorioAction,
   criarItemAction,
-  criarSubtemaCompletoAction,
-  criarTemaCompletoAction,
+  criarItemNoTemaAction,
+  criarSubtemaAction,
+  criarTemaAction,
   editarCasorioAction,
   editarItemAction,
   excluirSubtemaAction,
@@ -673,7 +676,7 @@ function FormTema({ casorioId, voltarPara }: { casorioId: string; voltarPara: st
   return (
     <div className="form-novo-tema">
       <Compositor
-        action={criarTemaCompletoAction}
+        action={criarTemaAction}
         ocultos={[
           { name: "voltarPara", value: voltarPara },
           { name: "casorioId", value: casorioId },
@@ -681,6 +684,7 @@ function FormTema({ casorioId, voltarPara }: { casorioId: string; voltarPara: st
         campoNome="nome"
         placeholder="Novo tema (ex.: Comida)"
         rotuloAbrir="+ Novo tema"
+        comCustoEssencial={false}
       />
     </div>
   );
@@ -700,14 +704,13 @@ function Tema({
   hoje: string;
   aberto: boolean;
 }) {
+  const soltos = tema.subtemas.find((s) => ehSoltos(s.nome));
+  const grupos = tema.subtemas.filter((s) => !ehSoltos(s.nome));
   const itens = tema.subtemas.flatMap((s) => s.itens);
   const progresso = progressoDe(itens);
   const dinheiro = calcularPainelFinanceiro(itens, 0);
   const prazos = calcularPainelPrazos(itens, hoje);
-  const filhos =
-    tema.subtemas.length === 0
-      ? ""
-      : ` com ${contar(tema.subtemas.length, "subtema", "subtemas")} e ${contar(itens.length, "item", "itens")}`;
+  const filhos = itens.length === 0 ? "" : ` com ${contar(itens.length, "item", "itens")}`;
 
   return (
     <details className="tema" open={aberto}>
@@ -737,7 +740,32 @@ function Tema({
       </summary>
 
       <div className="tema-corpo">
-        {tema.subtemas.map((sub) => (
+        {/* itens soltos: direto no tema, sem cabeçalho de subtema */}
+        {soltos?.itens.map((item) => (
+          <ItemLinha
+            key={item.id}
+            item={item}
+            voltarPara={voltarPara}
+            hoje={hoje}
+            temaNome={tema.nome}
+            subtemaNome={soltos.nome}
+          />
+        ))}
+
+        <Compositor
+          action={criarItemNoTemaAction}
+          ocultos={[
+            { name: "voltarPara", value: voltarPara },
+            { name: "casorioId", value: casorioId },
+            { name: "temaId", value: tema.id },
+          ]}
+          campoNome="titulo"
+          placeholder="Adicionar item (ex.: Com catupiry)"
+          rotuloAbrir="+ Item"
+        />
+
+        {/* subtemas nomeados: agrupamento opcional */}
+        {grupos.map((sub) => (
           <Subtema
             key={sub.id}
             subtema={sub}
@@ -748,17 +776,20 @@ function Tema({
           />
         ))}
 
-        <Compositor
-          action={criarSubtemaCompletoAction}
-          ocultos={[
-            { name: "voltarPara", value: voltarPara },
-            { name: "casorioId", value: casorioId },
-            { name: "temaId", value: tema.id },
-          ]}
-          campoNome="nome"
-          placeholder="Novo subtema (ex.: Bebidas)"
-          rotuloAbrir="+ Subtema"
-        />
+        {MOSTRAR_ADD_SUBTEMA && (
+          <Compositor
+            action={criarSubtemaAction}
+            ocultos={[
+              { name: "voltarPara", value: voltarPara },
+              { name: "casorioId", value: casorioId },
+              { name: "temaId", value: tema.id },
+            ]}
+            campoNome="nome"
+            placeholder="Novo subtema (ex.: Bebidas)"
+            rotuloAbrir="+ Subtema (opcional)"
+            comCustoEssencial={false}
+          />
+        )}
       </div>
     </details>
   );
@@ -1069,7 +1100,9 @@ function EditorItem({
         )}
 
       <div className="acoes-form">
-        <SubmitButton mensagemSucesso="Item salvo">Salvar item</SubmitButton>
+        <SubmitButton mensagemSucesso="Item salvo" fechaItemId={item.id}>
+          Salvar item
+        </SubmitButton>
       </div>
     </form>
   );
@@ -1101,7 +1134,7 @@ function FormStatus({ item, voltarPara }: { item: Item; voltarPara: string }) {
             />
           </span>
         )}
-        <SubmitButton className="leve" mensagemSucesso="Status atualizado">
+        <SubmitButton className="leve" mensagemSucesso="Status atualizado" fechaItemId={item.id}>
           Salvar
         </SubmitButton>
       </form>

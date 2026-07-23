@@ -10,6 +10,7 @@ import type {
 import type { Casorio, Item, Subtema, Tema, TemaComFilhos } from "@/domain/entities";
 import type { Centavos } from "@/domain/money";
 import { statusInicial, type StatusItem } from "@/domain/status";
+import { SUBTEMA_SOLTOS } from "@/domain/subtema-soltos";
 import type { TemaTemplate } from "@/domain/template-casorio";
 
 export class CasorioRepositoryMemoria implements CasorioRepository {
@@ -76,6 +77,14 @@ export class CasorioRepositoryMemoria implements CasorioRepository {
     };
     this.subtemas.push(subtema);
     return subtema;
+  }
+
+  async garantirSubtemaPadrao(temaId: string, casorioId: string): Promise<Subtema> {
+    const existente = this.subtemas.find(
+      (s) => s.temaId === temaId && s.nome === SUBTEMA_SOLTOS,
+    );
+    if (existente) return existente;
+    return this.criarSubtema({ temaId, casorioId, nome: SUBTEMA_SOLTOS, ordem: -1 });
   }
 
   async criarItem(input: NovoItem): Promise<Item> {

@@ -19,6 +19,7 @@ import type {
 } from "@/domain/entities";
 import type { StatusItem } from "@/domain/status";
 import { statusInicial } from "@/domain/status";
+import { SUBTEMA_SOLTOS } from "@/domain/subtema-soltos";
 import type { Centavos } from "@/domain/money";
 import type { TemaTemplate } from "@/domain/template-casorio";
 
@@ -175,6 +176,19 @@ export class SupabaseCasorioRepository implements CasorioRepository {
       .single();
     if (error) throw new Error(`criarSubtema: ${error.message}`);
     return mapSubtema(data);
+  }
+
+  async garantirSubtemaPadrao(temaId: string, casorioId: string): Promise<Subtema> {
+    const { data, error } = await this.sb
+      .from("subtema")
+      .select()
+      .eq("tema_id", temaId)
+      .eq("nome", SUBTEMA_SOLTOS)
+      .limit(1);
+    if (error) throw new Error(`garantirSubtemaPadrao (busca): ${error.message}`);
+    if (data && data.length > 0) return mapSubtema(data[0]);
+    // ordem -1 pra ficar antes dos grupos nomeados
+    return this.criarSubtema({ temaId, casorioId, nome: SUBTEMA_SOLTOS, ordem: -1 });
   }
 
   async criarItem(input: NovoItem): Promise<Item> {

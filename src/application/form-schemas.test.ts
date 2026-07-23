@@ -11,6 +11,7 @@ import {
   parseEditarItem,
   mensagemDeErro,
 } from "./form-schemas";
+import { SUBTEMA_SOLTOS } from "@/domain/subtema-soltos";
 
 const UUID = "11111111-1111-4111-8111-111111111111";
 const UUID2 = "22222222-2222-4222-8222-222222222222";
@@ -74,6 +75,13 @@ describe("parseTema / parseSubtema", () => {
 
   it("id inválido é rejeitado", () => {
     expect(() => parseTema(fd({ casorioId: "nao-e-uuid", nome: "X" }))).toThrow();
+  });
+
+  it("rejeita o nome reservado do subtema oculto (SUBTEMA_SOLTOS)", () => {
+    expect(() =>
+      parseSubtema(fd({ temaId: UUID, casorioId: UUID2, nome: SUBTEMA_SOLTOS })),
+    ).toThrow();
+    expect(() => parseRenomear(fd({ subtemaId: UUID, nome: SUBTEMA_SOLTOS }), "subtemaId")).toThrow();
   });
 });
 
